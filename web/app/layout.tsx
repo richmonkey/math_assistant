@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PrimeReactProvider } from 'primereact/api';
+import { ThemeProvider } from "./theme-context";
+import { PapersProvider } from "./papers-context";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -32,7 +34,9 @@ export default function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
                 <PrimeReactProvider>
-                    {children}
+                    <ThemeProvider>
+                        <PapersProvider>{children}</PapersProvider>
+                    </ThemeProvider>
                 </PrimeReactProvider>
             </body>
         </html>
