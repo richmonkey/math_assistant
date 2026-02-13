@@ -1,32 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --surface: #171717;
-  --surface-border: #3f3f46;
-  --muted: #a1a1aa;
-  --hover: #27272a;
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --surface: #171717;
+    --surface-border: #3f3f46;
+    --muted: #a1a1aa;
+    --hover: #27272a;
 }
 
 html.light {
-  --background: #ffffff;
-  --foreground: #171717;
-  --surface: #ffffff;
-  --surface-border: #e4e4e7;
-  --muted: #71717a;
-  --hover: #f4f4f5;
+    --background: #ffffff;
+    --foreground: #171717;
+    --surface: #ffffff;
+    --surface-border: #e4e4e7;
+    --muted: #71717a;
+    --hover: #f4f4f5;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* PrimeReact Dialog theme overrides */
+.p-dialog {
+    background: var(--surface) !important;
+    color: var(--foreground) !important;
+}
+
+.p-dialog .p-dialog-header {
+    background: var(--surface) !important;
+    color: var(--foreground) !important;
+    border-bottom: 1px solid var(--surface-border) !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.p-dialog .p-dialog-content {
+    background: var(--surface) !important;
+    color: var(--foreground) !important;
+}
+
+.p-dialog .p-dialog-footer {
+    background: var(--surface) !important;
+    border-top: 1px solid var(--surface-border) !important;
 }

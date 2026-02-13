@@ -31,6 +31,7 @@ type PapersContextValue = {
     addPaper: (input: PaperInput) => Paper;
     updatePaper: (id: string, update: PaperUpdate) => void;
     addQuestion: (paperId: string, input: QuestionInput) => void;
+    updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => void;
     deleteQuestion: (paperId: string, questionId: string) => void;
     getPaperById: (id: string) => Paper | undefined;
 };
@@ -66,7 +67,7 @@ const defaultPapers: Paper[] = [
                 id: "q-3",
                 type: "multiple",
                 prompt: "下列哪些矩阵是对称矩阵？",
-                answer: "A、C",
+                answer: "A,C",
             },
             {
                 id: "q-4",
@@ -151,6 +152,29 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
+    const updateQuestion = (paperId: string, questionId: string, update: QuestionInput) => {
+        setPapers((current) =>
+            current.map((paper) =>
+                paper.id === paperId
+                    ? {
+                        ...paper,
+                        questions: paper.questions.map((question) =>
+                            question.id === questionId
+                                ? {
+                                    ...question,
+                                    type: update.type,
+                                    prompt: update.prompt,
+                                    answer: update.answer,
+                                }
+                                : question
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : paper
+            )
+        );
+    };
+
     const deleteQuestion = (paperId: string, questionId: string) => {
         setPapers((current) =>
             current.map((paper) =>
@@ -175,6 +199,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             addPaper,
             updatePaper,
             addQuestion,
+            updateQuestion,
             deleteQuestion,
             getPaperById,
         }),
