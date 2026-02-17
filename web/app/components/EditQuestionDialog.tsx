@@ -46,8 +46,8 @@ export default function EditQuestionDialog({
         const trimmedPrompt = questionPrompt.trim();
         const resolvedAnswer = answerState.getResolvedAnswer(questionType);
 
-        if (!trimmedPrompt || !resolvedAnswer) {
-            setDialogError("请填写题目内容和答案");
+        if (!trimmedPrompt) {
+            setDialogError("请填写题目内容");
             return;
         }
         updateQuestion(paperId, question.id, {

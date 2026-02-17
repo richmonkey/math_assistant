@@ -11,7 +11,8 @@ import { usePapers } from "../../papers-context";
 import NewQuestionDialog from "../../components/NewQuestionDialog";
 import EditQuestionDialog from "../../components/EditQuestionDialog";
 import { useToast } from "../../toast-context";
-import ollama from 'ollama/browser'
+import AutoLatex from "../../components/AutoLatex";
+import { load_paper_image } from "../../lib/ocr";
 
 const questionTypeLabels: Record<string, string> = {
     single: "单选题",
@@ -40,82 +41,6 @@ const formatAnswer = (type: string, answer: string) => {
         .map((segment, index) => `答案${index + 1}：${segment}`)
         .join("、");
 };
-
-type PaperQuestion = {
-    number: string;
-    type: "multiple_choice" | "fill_blank" | "calculation" | "proof" | "unknown";
-    content: string;
-    options: { label: string; text: string }[];
-};
-
-async function load_paper_image(img: File): Promise<PaperQuestion[]> {
-    const prompt = `You are a professional OCR system specialized in high school mathematics exams.
-
-Your task is to extract ONLY printed content from the provided exam image and convert it into structured JSON.
-
-STRICT RULES:
-
-1. Extract only printed text. Ignore ALL handwritten answers, scribbles, corrections, underlines, marks, or stamps.
-2. Preserve question numbering exactly as shown.
-3. Convert all mathematical expressions into standard LaTeX format.
-   - Use $...$ for inline formulas
-   - Use $$...$$ for displayed equations
-4. Do NOT summarize.
-5. Do NOT explain.
-6. Do NOT guess missing parts.
-7. Do NOT repeat any content.
-8. If a question is incomplete or unclear, extract only the visible part.
-9. When the page ends, STOP immediately.
-10. Output VALID JSON only. No extra text before or after JSON.
-
-JSON FORMAT:
-
-{
-  "page": 1,
-  "exam_title": "",
-  "questions": [
-    {
-      "number": "",
-      "type": "multiple_choice | fill_blank | calculation | proof | unknown",
-      "content": "",
-      "options": [
-        {"label": "A", "text": ""},
-        {"label": "B", "text": ""},
-        {"label": "C", "text": ""},
-        {"label": "D", "text": ""}
-      ]
-    }
-  ]
-}
-
-Additional rules:
-- If the exam title is visible, extract it. Otherwise leave it empty.
-- If a question has no options, set "options": [].
-- Keep line breaks inside content using \n.
-- Ensure the output is strictly valid JSON.
-
-Return JSON only.`
-
-    //读取file对象，得到Uint8Array格式的图片数据
-    const arrayBuffer = await img.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    console.log("Loaded image as Uint8Array:", uint8Array);
-
-    let encodedImage = await ollama.encodeImage(uint8Array);
-    const response = await ollama.chat({
-        model: 'qwen3-vl:8b-instruct',
-        messages: [{
-            role: 'user',
-            content: prompt,
-            images: [encodedImage],
-        }],
-    })
-    console.log(response.message.content);
-    let obj = JSON.parse(response.message.content) // validate JSON
-    console.log("Extracted JSON:", obj);
-    //返回题目list对象
-    return obj.questions;
-}
 
 export default function PaperDetailPage() {
     const params = useParams<{ id: string }>();
@@ -201,6 +126,7 @@ export default function PaperDetailPage() {
                     </div>
                 </div>
             )}
+
             {!paper ? (
                 <>
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -211,6 +137,7 @@ export default function PaperDetailPage() {
                         >
                             返回列表
                         </Link>
+
                     </div>
                     <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
                         <p className="text-[var(--muted)]">未找到该试卷，请返回列表。</p>
@@ -236,6 +163,7 @@ export default function PaperDetailPage() {
                                     {title || "（双击编辑标题）"}
                                 </h1>
                             )}
+
                             {isDescriptionEditing ? (
                                 <InputTextarea
                                     value={description}
@@ -301,7 +229,7 @@ export default function PaperDetailPage() {
                                                 <p className="text-sm text-[var(--muted)]">
                                                     第 {index + 1} 题 · {questionTypeLabels[question.type]}
                                                 </p>
-                                                <p className="mt-1 font-medium">{question.prompt}</p>
+                                                <AutoLatex className="mt-1 font-medium" text={question.prompt} />
                                             </div>
                                             <div className="flex gap-2">
                                                 <EditQuestionDialog paperId={paper.id} question={question} />
@@ -314,9 +242,7 @@ export default function PaperDetailPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="rounded bg-[var(--hover)] p-3 text-sm">
-                                            答案：{formatAnswer(question.type, question.answer)}
-                                        </div>
+                                        <AutoLatex className="rounded bg-[var(--hover)] p-3 text-sm" text={`答案：${formatAnswer(question.type, question.answer)}`} />
                                     </li>
                                 ))}
                             </ul>
