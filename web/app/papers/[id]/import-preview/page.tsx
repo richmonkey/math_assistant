@@ -1,0 +1,373 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { useToast } from "../../../toast-context";
+import { usePapers, type QuestionType } from "../../../papers-context";
+
+type ImportQuestionType =
+    | "multiple_choice"
+    | "fill_blank"
+    | "calculation"
+    | "proof"
+    | "unknown";
+
+type ImportOption = {
+    label: string;
+    text: string;
+};
+
+type ImportQuestion = {
+    id: string;
+    number: string;
+    type: ImportQuestionType;
+    content: string;
+    options: ImportOption[];
+};
+
+type ImportPayload = {
+    questions: Omit<ImportQuestion, "id">[];
+};
+
+const questionTypeLabels: Record<ImportQuestionType, string> = {
+    multiple_choice: "选择题",
+    fill_blank: "填空题",
+    calculation: "计算题",
+    proof: "证明题",
+    unknown: "未知类型",
+};
+
+const optionLabelPool = ["A", "B", "C", "D", "E", "F"];
+
+const ensureOptionLabels = (options: ImportOption[]) =>
+    options.map((option, index) => ({
+        label: option.label || optionLabelPool[index] || `${index + 1}`,
+        text: option.text || "",
+    }));
+
+const normalizeQuestions = (payload: ImportPayload | null) => {
+    if (!payload?.questions?.length) {
+        return [] as ImportQuestion[];
+    }
+
+    return payload.questions.map((question, index) => ({
+        id: `import-${Date.now()}-${index}`,
+        number: question.number || `${index + 1}`,
+        type: question.type ?? "unknown",
+        content: question.content ?? "",
+        options: ensureOptionLabels(question.options ?? []),
+    }));
+};
+
+export default function ImportPreviewPage() {
+    const params = useParams<{ id: string }>();
+    const paperId = params?.id ?? "";
+    const router = useRouter();
+    const { showError } = useToast();
+    const { addQuestionsFromImport } = usePapers();
+    const [questions, setQuestions] = useState<ImportQuestion[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingQuestion, setEditingQuestion] = useState<ImportQuestion | null>(null);
+    const [draftNumber, setDraftNumber] = useState("");
+    const [draftType, setDraftType] = useState<ImportQuestionType>("unknown");
+    const [draftContent, setDraftContent] = useState("");
+    const [draftOptions, setDraftOptions] = useState<ImportOption[]>([]);
+
+    const mapImportType = (importType: ImportQuestionType): QuestionType => {
+        switch (importType) {
+            case "multiple_choice":
+                return "single";
+            case "fill_blank":
+                return "blank";
+            case "calculation":
+            case "proof":
+                return "essay";
+            case "unknown":
+            default:
+                return "essay";
+        }
+    };
+
+    const handleImport = () => {
+        if (questions.length === 0) {
+            showError("没有题目可导入", "导入失败");
+            return;
+        }
+
+        try {
+            const importInputs = questions.map((question) => ({
+                type: mapImportType(question.type),
+                prompt: question.content,
+                answer: "",
+                options: question.options,
+            }));
+
+            addQuestionsFromImport(paperId, importInputs);
+            sessionStorage.removeItem(storageKey);
+            router.push(`/papers/${paperId}`);
+        } catch (error) {
+            console.error("Failed to import questions:", error);
+            showError("导入失败，请稍后重试。", "导入失败");
+        }
+    };
+
+    const storageKey = useMemo(() => {
+        if (!paperId) {
+            return "";
+        }
+        return `import-preview-${paperId}`;
+    }, [paperId]);
+
+    useEffect(() => {
+        if (!storageKey) {
+            return;
+        }
+        try {
+            const stored = sessionStorage.getItem(storageKey);
+            if (!stored) {
+                return;
+            }
+            const parsed = JSON.parse(stored) as ImportPayload;
+            setQuestions(normalizeQuestions(parsed));
+        } catch (error) {
+            console.error("Failed to parse import preview:", error);
+            showError("导入预览数据解析失败，请重新导入试卷。", "导入失败");
+        }
+    }, [storageKey, showError]);
+
+    const openEditDialog = (question: ImportQuestion) => {
+        setEditingQuestion(question);
+        setDraftNumber(question.number);
+        setDraftType(question.type);
+        setDraftContent(question.content);
+        setDraftOptions(question.options.length ? question.options : []);
+        setIsDialogOpen(true);
+    };
+
+    const closeDialog = () => {
+        setIsDialogOpen(false);
+        setEditingQuestion(null);
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingQuestion) {
+            return;
+        }
+
+        setQuestions((current) =>
+            current.map((item) =>
+                item.id === editingQuestion.id
+                    ? {
+                        ...item,
+                        number: draftNumber.trim() || item.number,
+                        type: draftType,
+                        content: draftContent.trim(),
+                        options: ensureOptionLabels(
+                            draftOptions.map((option) => ({
+                                ...option,
+                                text: option.text.trim(),
+                            }))
+                        ),
+                    }
+                    : item
+            )
+        );
+        closeDialog();
+    };
+
+    const handleDeleteQuestion = (id: string) => {
+        setQuestions((current) => current.filter((item) => item.id !== id));
+    };
+
+    const updateOptionText = (index: number, value: string) => {
+        setDraftOptions((current) =>
+            current.map((option, optionIndex) =>
+                optionIndex === index ? { ...option, text: value } : option
+            )
+        );
+    };
+
+    const handleAddOption = () => {
+        setDraftOptions((current) => {
+            const nextLabel = optionLabelPool[current.length] ?? `${current.length + 1}`;
+            return [...current, { label: nextLabel, text: "" }];
+        });
+    };
+
+    const handleRemoveOption = (index: number) => {
+        setDraftOptions((current) => current.filter((_, optionIndex) => optionIndex !== index));
+    };
+
+    return (
+        <main className="mx-auto max-w-4xl p-6">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold">导入预览</h1>
+                    <p className="text-sm text-[var(--muted)]">请检查 OCR 结果并进行编辑</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        label="导入"
+                        icon="pi pi-download"
+                        onClick={handleImport}
+                    />
+                    <Link
+                        href={`/papers/${paperId}`}
+                        className="rounded border border-[var(--surface-border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--hover)]"
+                    >
+                        返回试卷
+                    </Link>
+                </div>
+            </div>
+
+            {questions.length === 0 ? (
+                <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-6 text-center">
+                    <p className="text-[var(--muted)]">暂无可预览的题目，请重新导入试卷。</p>
+                </section>
+            ) : (
+                <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-lg font-semibold">题目预览</h2>
+                        <span className="text-sm text-[var(--muted)]">共 {questions.length} 题</span>
+                    </div>
+
+                    <ul className="space-y-3">
+                        {questions.map((question, index) => (
+                            <li
+                                key={question.id}
+                                className="rounded border border-[var(--surface-border)] p-4"
+                            >
+                                <div className="mb-2 flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <p className="text-sm text-[var(--muted)]">
+                                            第 {question.number || index + 1} 题 · {questionTypeLabels[question.type]}
+                                        </p>
+                                        <p className="mt-1 whitespace-pre-wrap font-medium">
+                                            {question.content || "（未识别到题干）"}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            label="编辑"
+                                            icon="pi pi-pencil"
+                                            outlined
+                                            onClick={() => openEditDialog(question)}
+                                        />
+                                        <Button
+                                            label="删除"
+                                            icon="pi pi-trash"
+                                            severity="danger"
+                                            outlined
+                                            onClick={() => handleDeleteQuestion(question.id)}
+                                        />
+                                    </div>
+                                </div>
+                                {question.options.length > 0 && (
+                                    <div className="rounded bg-[var(--hover)] p-3 text-sm">
+                                        {question.options.map((option) => (
+                                            <div key={`${question.id}-${option.label}`}>
+                                                {option.label}. {option.text || "（空）"}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
+            <Dialog
+                header="编辑题目"
+                visible={isDialogOpen}
+                onHide={closeDialog}
+                className="w-full max-w-2xl"
+            >
+                <div className="flex flex-col gap-4 p-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-2 block text-sm text-[var(--foreground)]">题号</label>
+                            <InputText
+                                value={draftNumber}
+                                onChange={(event) => setDraftNumber(event.target.value)}
+                                className="w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-2 block text-sm text-[var(--foreground)]">题型</label>
+                            <select
+                                value={draftType}
+                                onChange={(event) =>
+                                    setDraftType(event.target.value as ImportQuestionType)
+                                }
+                                className="w-full rounded border border-[var(--surface-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                            >
+                                <option value="multiple_choice">选择题</option>
+                                <option value="fill_blank">填空题</option>
+                                <option value="calculation">计算题</option>
+                                <option value="proof">证明题</option>
+                                <option value="unknown">未知类型</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="mb-2 block text-sm text-[var(--foreground)]">题干</label>
+                        <InputTextarea
+                            value={draftContent}
+                            onChange={(event) => setDraftContent(event.target.value)}
+                            className="w-full"
+                            rows={6}
+                        />
+                    </div>
+                    <div>
+                        <div className="mb-2 flex items-center justify-between">
+                            <label className="text-sm text-[var(--foreground)]">选项</label>
+                            <Button
+                                label="新增选项"
+                                icon="pi pi-plus"
+                                size="small"
+                                outlined
+                                onClick={handleAddOption}
+                            />
+                        </div>
+                        {draftOptions.length === 0 ? (
+                            <p className="text-sm text-[var(--muted)]">无选项</p>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                {draftOptions.map((option, index) => (
+                                    <div key={`option-${index}`} className="flex items-center gap-2">
+                                        <span className="w-6 text-sm text-[var(--muted)]">
+                                            {option.label}.
+                                        </span>
+                                        <InputText
+                                            value={option.text}
+                                            onChange={(event) =>
+                                                updateOptionText(index, event.target.value)
+                                            }
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            icon="pi pi-times"
+                                            severity="danger"
+                                            outlined
+                                            onClick={() => handleRemoveOption(index)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button label="取消" severity="secondary" outlined onClick={closeDialog} />
+                        <Button label="保存" icon="pi pi-check" onClick={handleSaveEdit} />
+                    </div>
+                </div>
+            </Dialog>
+        </main>
+    );
+}

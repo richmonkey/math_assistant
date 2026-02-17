@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "primereact/button";
+import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { usePapers } from "../../papers-context";
 import NewQuestionDialog from "../../components/NewQuestionDialog";
 import EditQuestionDialog from "../../components/EditQuestionDialog";
+import { useToast } from "../../toast-context";
+import ollama from 'ollama/browser'
 
 const questionTypeLabels: Record<string, string> = {
     single: "单选题",
@@ -38,15 +41,95 @@ const formatAnswer = (type: string, answer: string) => {
         .join("、");
 };
 
+type PaperQuestion = {
+    number: string;
+    type: "multiple_choice" | "fill_blank" | "calculation" | "proof" | "unknown";
+    content: string;
+    options: { label: string; text: string }[];
+};
+
+async function load_paper_image(img: File): Promise<PaperQuestion[]> {
+    const prompt = `You are a professional OCR system specialized in high school mathematics exams.
+
+Your task is to extract ONLY printed content from the provided exam image and convert it into structured JSON.
+
+STRICT RULES:
+
+1. Extract only printed text. Ignore ALL handwritten answers, scribbles, corrections, underlines, marks, or stamps.
+2. Preserve question numbering exactly as shown.
+3. Convert all mathematical expressions into standard LaTeX format.
+   - Use $...$ for inline formulas
+   - Use $$...$$ for displayed equations
+4. Do NOT summarize.
+5. Do NOT explain.
+6. Do NOT guess missing parts.
+7. Do NOT repeat any content.
+8. If a question is incomplete or unclear, extract only the visible part.
+9. When the page ends, STOP immediately.
+10. Output VALID JSON only. No extra text before or after JSON.
+
+JSON FORMAT:
+
+{
+  "page": 1,
+  "exam_title": "",
+  "questions": [
+    {
+      "number": "",
+      "type": "multiple_choice | fill_blank | calculation | proof | unknown",
+      "content": "",
+      "options": [
+        {"label": "A", "text": ""},
+        {"label": "B", "text": ""},
+        {"label": "C", "text": ""},
+        {"label": "D", "text": ""}
+      ]
+    }
+  ]
+}
+
+Additional rules:
+- If the exam title is visible, extract it. Otherwise leave it empty.
+- If a question has no options, set "options": [].
+- Keep line breaks inside content using \n.
+- Ensure the output is strictly valid JSON.
+
+Return JSON only.`
+
+    //读取file对象，得到Uint8Array格式的图片数据
+    const arrayBuffer = await img.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    console.log("Loaded image as Uint8Array:", uint8Array);
+
+    let encodedImage = await ollama.encodeImage(uint8Array);
+    const response = await ollama.chat({
+        model: 'qwen3-vl:8b-instruct',
+        messages: [{
+            role: 'user',
+            content: prompt,
+            images: [encodedImage],
+        }],
+    })
+    console.log(response.message.content);
+    let obj = JSON.parse(response.message.content) // validate JSON
+    console.log("Extracted JSON:", obj);
+    //返回题目list对象
+    return obj.questions;
+}
+
 export default function PaperDetailPage() {
     const params = useParams<{ id: string }>();
     const paperId = params?.id ?? "";
     const { getPaperById, updatePaper, deleteQuestion } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
+    const router = useRouter();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [isTitleEditing, setIsTitleEditing] = useState(false);
     const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    const importInputRef = useRef<HTMLInputElement>(null);
+    const { showError } = useToast();
 
     useEffect(() => {
         if (!paper) {
@@ -72,8 +155,52 @@ export default function PaperDetailPage() {
         updatePaper(paper.id, { description });
     };
 
+    const handleImportClick = () => {
+        importInputRef.current?.click();
+    };
+
+    const handleImportChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files?.length) {
+            return;
+        }
+        if (!event.target.files[0]) {
+            return;
+        }
+        let file = event.target.files[0];
+
+        event.target.value = "";
+
+        try {
+            setIsImporting(true);
+            const questions = await load_paper_image(file);
+            console.log("Imported questions:", questions);
+            if (paperId) {
+                sessionStorage.setItem(
+                    `import-preview-${paperId}`,
+                    JSON.stringify({ questions })
+                );
+                router.push(`/papers/${paperId}/import-preview`);
+            } else {
+                showError("未能识别试卷编号，请返回列表后重试。", "导入失败");
+            }
+        } catch (error) {
+            console.error("Failed to import paper:", error);
+            showError("请确保上传的是清晰的试卷图片，并且图片中仅包含打印内容。", "导入失败");
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
     return (
         <main className="mx-auto max-w-3xl p-6">
+            {isImporting && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="rounded-lg bg-[var(--surface)] p-6 text-center shadow-lg">
+                        <ProgressSpinner />
+                        <p className="mt-3 text-sm text-[var(--muted)]">正在处理，请稍候...</p>
+                    </div>
+                </div>
+            )}
             {!paper ? (
                 <>
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -142,7 +269,22 @@ export default function PaperDetailPage() {
                                 <h2 className="text-lg font-semibold">题目列表</h2>
                                 <span className="text-sm text-[var(--muted)]">共 {paper.questions.length} 题</span>
                             </div>
-                            <NewQuestionDialog paperId={paper.id} />
+                            <div className="flex items-center gap-2">
+                                <input
+                                    ref={importInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImportChange}
+                                    className="hidden"
+                                />
+                                <Button
+                                    label="导入试卷"
+                                    icon="pi pi-upload"
+                                    outlined
+                                    onClick={handleImportClick}
+                                />
+                                <NewQuestionDialog paperId={paper.id} />
+                            </div>
                         </div>
 
                         {paper.questions.length === 0 ? (

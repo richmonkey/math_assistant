@@ -5,13 +5,20 @@ import { Button } from "primereact/button";
 import { useTheme } from "./theme-context";
 import { usePapers } from "./papers-context";
 import NewPaperDialog from "./components/NewPaperDialog";
+import ollama from 'ollama/browser'
 
+async function list_models() {
+    let res = await ollama.list();
+    console.log("Available models:", res);
+
+}
 export default function Home() {
     const { papers } = usePapers();
     const { theme, toggleTheme } = useTheme();
 
     const handleToggleTheme = () => {
         toggleTheme();
+        list_models();
     };
 
     return (

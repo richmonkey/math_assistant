@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { PrimeReactProvider } from 'primereact/api';
 import { ThemeProvider } from "./theme-context";
 import { PapersProvider } from "./papers-context";
+import { ToastProvider } from "./toast-context";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -35,7 +36,9 @@ export default function RootLayout({
             >
                 <PrimeReactProvider>
                     <ThemeProvider>
-                        <PapersProvider>{children}</PapersProvider>
+                        <PapersProvider>
+                            <ToastProvider>{children}</ToastProvider>
+                        </PapersProvider>
                     </ThemeProvider>
                 </PrimeReactProvider>
             </body>

@@ -17,6 +17,7 @@ type Question = {
     type: QuestionType;
     prompt: string;
     answer: string;
+    options?: Array<{ label: string; text: string }>;
 };
 
 type PaperInput = {
@@ -34,6 +35,7 @@ type PapersContextValue = {
     updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => void;
     deleteQuestion: (paperId: string, questionId: string) => void;
     getPaperById: (id: string) => Paper | undefined;
+    addQuestionsFromImport: (paperId: string, inputs: ImportQuestionInput[]) => void;
 };
 
 const defaultPapers: Paper[] = [
@@ -193,6 +195,27 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
 
     const getPaperById = (id: string) => papers.find((paper) => paper.id === id);
 
+    const addQuestionsFromImport = (paperId: string, inputs: ImportQuestionInput[]) => {
+        const newQuestions: Question[] = inputs.map((input, index) => ({
+            id: `q-${Date.now()}-${index}`,
+            type: input.type,
+            prompt: input.prompt,
+            answer: input.answer,
+            options: input.options,
+        }));
+        setPapers((current) =>
+            current.map((paper) =>
+                paper.id === paperId
+                    ? {
+                        ...paper,
+                        questions: [...newQuestions, ...paper.questions],
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : paper
+            )
+        );
+    };
+
     const value = useMemo(
         () => ({
             papers,
@@ -202,6 +225,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             updateQuestion,
             deleteQuestion,
             getPaperById,
+            addQuestionsFromImport,
         }),
         [papers]
     );
@@ -223,4 +247,11 @@ type QuestionInput = {
     answer: string;
 };
 
-export type { Paper, Question, QuestionType };
+type ImportQuestionInput = {
+    type: QuestionType;
+    prompt: string;
+    answer: string;
+    options?: Array<{ label: string; text: string }>;
+};
+
+export type { Paper, Question, QuestionType, ImportQuestionInput };
