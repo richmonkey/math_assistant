@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
-import { InputTextarea } from "primereact/inputtextarea";
 import { QuestionType, usePapers, type Question } from "../papers-context";
 import QuestionAnswerFields, { useAnswerState } from "./QuestionAnswerFields";
+import QuestionPromptField from "./QuestionPromptField";
 
 type EditQuestionDialogProps = {
     paperId: string;
@@ -93,15 +93,11 @@ export default function EditQuestionDialog({
                             <option value="essay">解答题</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="mb-2 block text-sm text-[var(--foreground)]">题目内容</label>
-                        <InputTextarea
-                            value={questionPrompt}
-                            onChange={(event) => setQuestionPrompt(event.target.value)}
-                            className="w-full"
-                            rows={4}
-                        />
-                    </div>
+                    <QuestionPromptField
+                        value={questionPrompt}
+                        onChange={setQuestionPrompt}
+                        isDialogOpen={isDialogOpen}
+                    />
                     <QuestionAnswerFields
                         questionType={questionType}
                         questionAnswer={answerState.questionAnswer}
