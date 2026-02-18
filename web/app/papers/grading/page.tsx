@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
-import { Button } from "primereact/button";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePapers } from "../../papers-context";
 import AutoLatex from "../../components/AutoLatex";
+import { QuestionData, QuestionGradingResult, gradeQuestion, generateOverallComment } from "../../lib/grading";
 
 const questionTypeLabels: Record<string, string> = {
     single: "单选题",
@@ -14,36 +14,120 @@ const questionTypeLabels: Record<string, string> = {
     essay: "解答题",
 };
 
-type GradingResult = {
-    questionId: string;
-    score: number;
-    maxScore: number;
-    comment: string;
-    isCorrect: boolean;
+export type PaperGradingResult = {
+    totalScore: number;
+    maxTotalScore: number;
+    overallComment: string;
+    questionResults: QuestionGradingResult[];
 };
+
 
 function GradingPageContent() {
     const searchParams = useSearchParams();
     const paperId = searchParams.get("paperId") ?? "";
-    const { getPaperById } = usePapers();
+    const { getPaperById, saveGradingResult } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
 
-    // 模拟批改结果数据，实际应该从后端获取或通过其他方式生成
-    const [gradingResults] = useState<GradingResult[]>(() => {
-        if (!paper) return [];
-        return paper.questions.map((question) => ({
-            questionId: question.id,
-            score: Math.random() > 0.5 ? 10 : Math.floor(Math.random() * 10),
-            maxScore: 10,
-            comment: Math.random() > 0.5
-                ? "答案正确，解答完整。"
-                : "答案有误，请检查计算过程。",
-            isCorrect: Math.random() > 0.5,
-        }));
+    const [paperGradingResult, setPaperGradingResult] = useState<PaperGradingResult>({ totalScore: 0, maxTotalScore: 0, overallComment: "", questionResults: [] });
+    const [isGrading, setIsGrading] = useState(false);
+    const [currentGradingIndex, setCurrentGradingIndex] = useState(-1);
+
+    const gradingResults = paperGradingResult.questionResults.map((result) => {
+        return {
+            questionId: result.questionId,
+            score: result.score,
+            maxScore: result.maxScore,
+            comment: result.comment,
+            isCorrect: result.isCorrect,
+        };
     });
 
-    const totalScore = gradingResults.reduce((sum, result) => sum + result.score, 0);
-    const maxTotalScore = gradingResults.reduce((sum, result) => sum + result.maxScore, 0);
+    const totalScore = paperGradingResult.totalScore;
+    const maxTotalScore = paperGradingResult.maxTotalScore;
+    const overallComment = paperGradingResult.overallComment;
+
+
+    /**
+     * 对整张试卷进行 AI 批改
+     * @param questions 题目列表
+     * @param maxScorePerQuestion 每题满分（默认10分）
+     */
+    async function gradePaper(
+        questions: QuestionData[],
+        maxScorePerQuestion: number = 10
+    ): Promise<PaperGradingResult> {
+        // 步骤1：批改每道题
+        const questionResults: QuestionGradingResult[] = [];
+
+        for (let i = 0; i < questions.length; i++) {
+            const question = questions[i];
+
+            // 更新当前批改进度
+            setCurrentGradingIndex(i);
+
+            const result = await gradeQuestion(question, maxScorePerQuestion);
+            questionResults.push(result);
+        }
+
+        // 计算总分
+        const totalScore = questionResults.reduce((sum, r) => sum + r.score, 0);
+        const maxTotalScore = questionResults.reduce((sum, r) => sum + r.maxScore, 0);
+
+        // 步骤2：生成整体评语
+        const overallComment = await generateOverallComment(
+            questionResults,
+            totalScore,
+            maxTotalScore
+        );
+
+        return {
+            totalScore,
+            maxTotalScore,
+            overallComment,
+            questionResults,
+        };
+    }
+
+
+    const performGrading = async () => {
+        if (!paper) {
+            return;
+        }
+
+        setIsGrading(true);
+        setCurrentGradingIndex(0);
+
+        const result = await gradePaper(paper.questions.map(q => ({
+            id: q.id,
+            type: questionTypeLabels[q.type] ?? "未知题型",
+            prompt: q.prompt,
+            answer: q.answer,
+        })));
+
+        setPaperGradingResult(result);
+        // 保存阅卷结果到 papers context
+        saveGradingResult(paperId, result);
+        setIsGrading(false);
+        setCurrentGradingIndex(-1);
+    };
+
+    useEffect(() => {
+        if (!paper) {
+            return;
+        }
+
+        // 如果已经有阅卷结果，且题目数量一致，直接使用
+        if (paper.gradingResult && paper.gradingResult.questionResults.length === paper.questions.length) {
+            setPaperGradingResult(paper.gradingResult);
+            return;
+        }
+
+        // 否则进行批改
+        performGrading();
+    }, [paper, paperId, saveGradingResult]);
+
+
+
 
     return (
         <main className="mx-auto max-w-3xl p-6">
@@ -69,128 +153,160 @@ function GradingPageContent() {
                             <h1 className="text-2xl font-semibold">{paper.title} - 阅卷详情</h1>
                             <p className="mt-2 text-[var(--muted)]">{paper.description}</p>
                         </div>
-                        <Link
-                            href={`/papers?paperId=${encodeURIComponent(paperId)}`}
-                            className="rounded border border-[var(--surface-border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--hover)]"
-                        >
-                            返回试卷
-                        </Link>
+                        <div className="flex gap-2">
+                            {!isGrading && paper.gradingResult && (
+                                <button
+                                    onClick={performGrading}
+                                    className="rounded border border-[var(--surface-border)] bg-[var(--primary-color)] px-3 py-2 text-sm text-white transition-colors hover:opacity-90"
+                                >
+                                    重新阅卷
+                                </button>
+                            )}
+                            <Link
+                                href={`/papers?paperId=${encodeURIComponent(paperId)}`}
+                                className="rounded border border-[var(--surface-border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--hover)]"
+                            >
+                                返回试卷
+                            </Link>
+                        </div>
                     </div>
 
+                    {/* 阅卷进度 */}
+                    {isGrading && (
+                        <section className="mb-6 rounded border border-blue-300 bg-blue-50 p-5 dark:border-blue-700 dark:bg-blue-950">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                                        正在阅卷中...
+                                    </h2>
+                                    <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                                        正在批改第 {currentGradingIndex + 1} / {paper.questions.length} 题
+                                    </p>
+                                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
+                                        <div
+                                            className="h-full bg-blue-600 transition-all duration-300 dark:bg-blue-400"
+                                            style={{ width: `${((currentGradingIndex + 1) / paper.questions.length) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            {currentGradingIndex >= 0 && currentGradingIndex < paper.questions.length && (
+                                <div className="mt-4 rounded border border-blue-200 bg-white p-4 dark:border-blue-800 dark:bg-blue-900">
+                                    <p className="mb-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                                        当前题目：第 {currentGradingIndex + 1} 题 · {questionTypeLabels[paper.questions[currentGradingIndex].type]}
+                                    </p>
+                                    <AutoLatex
+                                        className="text-sm text-blue-900 dark:text-blue-100"
+                                        text={paper.questions[currentGradingIndex].prompt}
+                                    />
+                                </div>
+                            )}
+                        </section>
+                    )}
+
                     {/* 总分统计 */}
-                    <section className="mb-6 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold">总分统计</h2>
-                                <p className="mt-1 text-sm text-[var(--muted)]">
-                                    共 {paper.questions.length} 题
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-3xl font-bold">
-                                    {totalScore} / {maxTotalScore}
+                    {!isGrading && (
+                        <section className="mb-6 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-semibold">总分统计</h2>
+                                    <p className="mt-1 text-sm text-[var(--muted)]">
+                                        共 {paper.questions.length} 题
+                                    </p>
                                 </div>
-                                <div className="mt-1 text-sm text-[var(--muted)]">
-                                    得分率：{maxTotalScore > 0 ? Math.round((totalScore / maxTotalScore) * 100) : 0}%
+                                <div className="text-right">
+                                    <div className="text-3xl font-bold">
+                                        {totalScore} / {maxTotalScore}
+                                    </div>
+                                    <div className="mt-1 text-sm text-[var(--muted)]">
+                                        得分率：{maxTotalScore > 0 ? Math.round((totalScore / maxTotalScore) * 100) : 0}%
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    )}
 
                     {/* 题目批改详情 */}
-                    <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-                        <h2 className="mb-4 text-lg font-semibold">批改详情</h2>
+                    {!isGrading && (
+                        <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
+                            <h2 className="mb-4 text-lg font-semibold">批改详情</h2>
 
-                        {paper.questions.length === 0 ? (
-                            <p className="text-sm text-[var(--muted)]">暂无题目。</p>
-                        ) : (
-                            <ul className="space-y-4">
-                                {paper.questions.map((question, index) => {
-                                    const result = gradingResults.find(r => r.questionId === question.id);
-                                    if (!result) return null;
+                            {paper.questions.length === 0 ? (
+                                <p className="text-sm text-[var(--muted)]">暂无题目。</p>
+                            ) : (
+                                <ul className="space-y-4">
+                                    {paper.questions.map((question, index) => {
+                                        const result = gradingResults.find(r => r.questionId === question.id);
+                                        if (!result) return null;
 
-                                    return (
-                                        <li
-                                            key={question.id}
-                                            className="rounded border border-[var(--surface-border)] p-4"
-                                        >
-                                            <div className="mb-3 flex items-center justify-between gap-4">
-                                                <div className="flex items-center gap-3">
-                                                    <p className="text-sm text-[var(--muted)]">
-                                                        第 {index + 1} 题 · {questionTypeLabels[question.type]}
-                                                    </p>
-                                                    <span
-                                                        className={`rounded px-2 py-1 text-xs font-medium ${result.isCorrect
-                                                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                            }`}
-                                                    >
-                                                        {result.isCorrect ? "正确" : "错误"}
-                                                    </span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-lg font-semibold">
-                                                        {result.score} / {result.maxScore}
+                                        return (
+                                            <li
+                                                key={question.id}
+                                                className="rounded border border-[var(--surface-border)] p-4"
+                                            >
+                                                <div className="mb-3 flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-sm text-[var(--muted)]">
+                                                            第 {index + 1} 题 · {questionTypeLabels[question.type]}
+                                                        </p>
+                                                        <span
+                                                            className={`rounded px-2 py-1 text-xs font-medium ${result.isCorrect
+                                                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                }`}
+                                                        >
+                                                            {result.isCorrect ? "正确" : "错误"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-lg font-semibold">
+                                                            {result.score} / {result.maxScore}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <AutoLatex
-                                                className="mb-3 font-medium"
-                                                text={question.prompt}
-                                            />
-
-                                            <div className="mb-3 rounded bg-[var(--hover)] p-3">
-                                                <p className="mb-1 text-sm font-medium text-[var(--muted)]">
-                                                    标准答案：
-                                                </p>
                                                 <AutoLatex
-                                                    className="text-sm"
-                                                    text={question.answer}
+                                                    className="mb-3 font-medium"
+                                                    text={question.prompt}
                                                 />
-                                            </div>
 
-                                            <div className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
-                                                <p className="mb-1 text-sm font-medium text-[var(--muted)]">
-                                                    批改意见：
-                                                </p>
-                                                <p className="text-sm">{result.comment}</p>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
-                    </section>
+                                                <div className="mb-3 rounded bg-[var(--hover)] p-3">
+                                                    <p className="mb-1 text-sm font-medium text-[var(--muted)]">
+                                                        答案：
+                                                    </p>
+                                                    <AutoLatex
+                                                        className="text-sm"
+                                                        text={question.answer}
+                                                    />
+                                                </div>
+
+                                                <div className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
+                                                    <p className="mb-1 text-sm font-medium text-[var(--muted)]">
+                                                        批改意见：
+                                                    </p>
+                                                    <p className="text-sm">{result.comment}</p>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </section>
+                    )}
 
                     {/* 整体评语 */}
-                    <section className="mt-6 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-                        <h2 className="mb-3 text-lg font-semibold">整体评语</h2>
-                        <div className="rounded bg-[var(--hover)] p-4">
-                            <p className="text-sm leading-relaxed">
-                                {maxTotalScore > 0 ? (
-                                    (() => {
-                                        const scoreRate = (totalScore / maxTotalScore) * 100;
-                                        if (scoreRate >= 90) {
-                                            return "本次测验表现优异！您对知识点的掌握非常扎实，答题思路清晰，解题步骤规范。继续保持这种学习态度，争取在更有挑战性的题目中有所突破。";
-                                        } else if (scoreRate >= 75) {
-                                            return "本次测验表现良好。基础知识掌握较为扎实，但在部分题目的解答上还有提升空间。建议针对错题进行专项复习，强化薄弱环节，争取下次取得更好的成绩。";
-                                        } else if (scoreRate >= 60) {
-                                            return "本次测验基本达到及格水平。您已经掌握了部分基础知识，但在理解深度和应用能力上还需要加强。建议系统复习相关章节，多做练习题，巩固基础知识点。";
-                                        } else {
-                                            return "本次测验成绩不太理想，需要引起重视。建议您认真回顾课堂内容，梳理基础知识点，可以寻求老师或同学的帮助。学习是一个循序渐进的过程，不要气馁，加强练习一定会有所进步。";
-                                        }
-                                    })()
-                                ) : (
-                                    "暂无评语。"
-                                )}
-                            </p>
-                        </div>
-                    </section>
+                    {!isGrading && (
+                        <section className="mt-6 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
+                            <h2 className="mb-3 text-lg font-semibold">整体评语</h2>
+                            <div className="rounded bg-[var(--hover)] p-4">
+                                <p className="text-sm leading-relaxed">
+                                    {overallComment}
+                                </p>
+                            </div>
+                        </section>
+                    )}
                 </>
             )}
-
-
         </main>
     );
 }

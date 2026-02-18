@@ -2,12 +2,27 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
+type GradingResult = {
+    totalScore: number;
+    maxTotalScore: number;
+    overallComment: string;
+    questionResults: {
+        questionId: string;
+        score: number;
+        maxScore: number;
+        comment: string;
+        isCorrect: boolean;
+
+    }[];
+};
+
 type Paper = {
     id: string;
     title: string;
     description: string;
     updatedAt: string;
     questions: Question[];
+    gradingResult?: GradingResult;
 };
 
 type QuestionType = "single" | "multiple" | "blank" | "essay";
@@ -37,6 +52,7 @@ type PapersContextValue = {
     deleteQuestion: (paperId: string, questionId: string) => void;
     getPaperById: (id: string) => Paper | undefined;
     addQuestionsFromImport: (paperId: string, inputs: ImportQuestionInput[]) => void;
+    saveGradingResult: (paperId: string, result: GradingResult) => void;
 };
 
 const defaultPapers: Paper[] = [
@@ -214,6 +230,20 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
 
     const getPaperById = (id: string) => papers.find((paper) => paper.id === id);
 
+    const saveGradingResult = (paperId: string, result: GradingResult) => {
+        setPapers((current) =>
+            current.map((paper) =>
+                paper.id === paperId
+                    ? {
+                        ...paper,
+                        gradingResult: result,
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : paper
+            )
+        );
+    };
+
     const addQuestionsFromImport = (paperId: string, inputs: ImportQuestionInput[]) => {
         const newQuestions: Question[] = inputs.map((input, index) => ({
             id: `q-${Date.now()}-${index}`,
@@ -245,6 +275,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             deleteQuestion,
             getPaperById,
             addQuestionsFromImport,
+            saveGradingResult,
         }),
         [papers]
     );
@@ -272,4 +303,4 @@ type ImportQuestionInput = {
     answer?: string;
 };
 
-export type { Paper, Question, QuestionType, ImportQuestionInput };
+export type { Paper, Question, QuestionType, ImportQuestionInput, GradingResult };
