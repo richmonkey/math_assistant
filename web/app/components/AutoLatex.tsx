@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 //@ts-ignore
 import renderMathInElement from 'katex/dist/contrib/auto-render';
 import 'katex/dist/katex.min.css';
+import katex from 'katex';
 
 const AutoLatex = ({ text, className }: { text: string; className?: string }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -32,5 +33,69 @@ const AutoLatex = ({ text, className }: { text: string; className?: string }) =>
         </div>
     );
 };
+
+
+const hasLatexDelimiters = (input: string) => {
+    return /\$\$[\s\S]+?\$\$|\$[^$]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\]/.test(input);
+};
+
+const looksLikeLatex = (input: string) => {
+    const trimmed = input.trim();
+
+    if (!trimmed) {
+        return false;
+    }
+
+    return /\\[a-zA-Z]+|[_^{}]|\\begin\{|\\end\{|\\frac|\\sqrt/.test(trimmed);
+};
+
+export const AutoCodeLatex = ({ text, className }: { text: string; className?: string }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = '';
+
+        if (hasLatexDelimiters(text)) {
+            container.textContent = text;
+
+            renderMathInElement(container, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                throwOnError: false
+            });
+
+            return;
+        }
+
+        if (looksLikeLatex(text)) {
+            katex.render(text, container, {
+                throwOnError: false,
+                displayMode: true
+            });
+
+            return;
+        }
+
+        container.textContent = text;
+    }, [text]); // 当文本变化时重新渲染
+
+    return (
+        <div ref={containerRef} className={`${className ?? ""} whitespace-pre-wrap`}>
+            {text}
+        </div>
+    );
+};
+
 
 export default AutoLatex;
