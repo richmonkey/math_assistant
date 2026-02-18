@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import AutoLatex from "../../../components/AutoLatex";
-import { useToast } from "../../../toast-context";
-import { usePapers, type QuestionType } from "../../../papers-context";
+import AutoLatex from "../../components/AutoLatex";
+import { useToast } from "../../toast-context";
+import { usePapers, type QuestionType } from "../../papers-context";
 
 type ImportQuestionType =
     | "multiple_choice"
@@ -17,8 +17,6 @@ type ImportQuestionType =
     | "calculation"
     | "proof"
     | "unknown";
-
-
 
 type ImportQuestion = {
     id: string;
@@ -39,7 +37,6 @@ const questionTypeLabels: Record<ImportQuestionType, string> = {
     unknown: "未知类型",
 };
 
-
 const normalizeQuestions = (payload: ImportPayload | null) => {
     if (!payload?.questions?.length) {
         return [] as ImportQuestion[];
@@ -54,9 +51,9 @@ const normalizeQuestions = (payload: ImportPayload | null) => {
     }));
 };
 
-export default function ImportPreviewPage() {
-    const params = useParams<{ id: string }>();
-    const paperId = params?.id ?? "";
+function ImportPreviewPageContent() {
+    const searchParams = useSearchParams();
+    const paperId = searchParams.get("paperId") ?? "";
     const router = useRouter();
     const { showError } = useToast();
     const { addQuestionsFromImport } = usePapers();
@@ -82,6 +79,13 @@ export default function ImportPreviewPage() {
         }
     };
 
+    const storageKey = useMemo(() => {
+        if (!paperId) {
+            return "";
+        }
+        return `import-preview-${paperId}`;
+    }, [paperId]);
+
     const handleImport = () => {
         if (questions.length === 0) {
             showError("没有题目可导入", "导入失败");
@@ -97,19 +101,12 @@ export default function ImportPreviewPage() {
 
             addQuestionsFromImport(paperId, importInputs);
             sessionStorage.removeItem(storageKey);
-            router.push(`/papers/${paperId}`);
+            router.push(`/papers?paperId=${encodeURIComponent(paperId)}`);
         } catch (error) {
             console.error("Failed to import questions:", error);
             showError("导入失败，请稍后重试。", "导入失败");
         }
     };
-
-    const storageKey = useMemo(() => {
-        if (!paperId) {
-            return "";
-        }
-        return `import-preview-${paperId}`;
-    }, [paperId]);
 
     useEffect(() => {
         if (!storageKey) {
@@ -179,7 +176,7 @@ export default function ImportPreviewPage() {
                         onClick={handleImport}
                     />
                     <Link
-                        href={`/papers/${paperId}`}
+                        href={`/papers?paperId=${encodeURIComponent(paperId)}`}
                         className="rounded border border-[var(--surface-border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--hover)]"
                     >
                         返回试卷
@@ -230,7 +227,6 @@ export default function ImportPreviewPage() {
                                         />
                                     </div>
                                 </div>
-
                             </li>
                         ))}
                     </ul>
@@ -289,5 +285,13 @@ export default function ImportPreviewPage() {
                 </div>
             </Dialog>
         </main>
+    );
+}
+
+export default function ImportPreviewPage() {
+    return (
+        <Suspense fallback={<main className="mx-auto max-w-4xl p-6" />}>
+            <ImportPreviewPageContent />
+        </Suspense>
     );
 }

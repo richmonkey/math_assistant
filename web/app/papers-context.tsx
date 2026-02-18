@@ -200,7 +200,6 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             type: input.type,
             prompt: input.prompt,
             answer: input.answer,
-            options: input.options,
         }));
         setPapers((current) =>
             current.map((paper) =>
@@ -250,7 +249,6 @@ type ImportQuestionInput = {
     type: QuestionType;
     prompt: string;
     answer: string;
-    options?: Array<{ label: string; text: string }>;
 };
 
 export type { Paper, Question, QuestionType, ImportQuestionInput };

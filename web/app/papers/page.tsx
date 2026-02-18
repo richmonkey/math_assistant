@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { usePapers } from "../../papers-context";
-import NewQuestionDialog from "../../components/NewQuestionDialog";
-import EditQuestionDialog from "../../components/EditQuestionDialog";
-import { useToast } from "../../toast-context";
-import AutoLatex from "../../components/AutoLatex";
-import { load_paper_image } from "../../lib/ocr";
+import { usePapers } from "../papers-context";
+import NewQuestionDialog from "../components/NewQuestionDialog";
+import EditQuestionDialog from "../components/EditQuestionDialog";
+import { useToast } from "../toast-context";
+import AutoLatex from "../components/AutoLatex";
+import { load_paper_image } from "../lib/ocr";
 
 const questionTypeLabels: Record<string, string> = {
     single: "单选题",
@@ -42,10 +42,9 @@ const formatAnswer = (type: string, answer: string) => {
         .join("、");
 };
 
-
-export default function PaperDetailPage() {
-    const params = useParams<{ id: string }>();
-    const paperId = params?.id ?? "";
+function PaperDetailPageContent() {
+    const searchParams = useSearchParams();
+    const paperId = searchParams.get("paperId") ?? "";
     const { getPaperById, updatePaper, deleteQuestion } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
     const router = useRouter();
@@ -92,7 +91,7 @@ export default function PaperDetailPage() {
         if (!event.target.files[0]) {
             return;
         }
-        let file = event.target.files[0];
+        const file = event.target.files[0];
 
         event.target.value = "";
 
@@ -105,7 +104,7 @@ export default function PaperDetailPage() {
                     `import-preview-${paperId}`,
                     JSON.stringify({ questions })
                 );
-                router.push(`/papers/${paperId}/import-preview`);
+                router.push(`/papers/import-preview?paperId=${encodeURIComponent(paperId)}`);
             } else {
                 showError("未能识别试卷编号，请返回列表后重试。", "导入失败");
             }
@@ -138,7 +137,6 @@ export default function PaperDetailPage() {
                         >
                             返回列表
                         </Link>
-
                     </div>
                     <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
                         <p className="text-[var(--muted)]">未找到该试卷，请返回列表。</p>
@@ -192,7 +190,6 @@ export default function PaperDetailPage() {
                     </div>
 
                     <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-
                         <div className="mb-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-lg font-semibold">题目列表</h2>
@@ -251,5 +248,13 @@ export default function PaperDetailPage() {
                 </>
             )}
         </main>
+    );
+}
+
+export default function PaperDetailPage() {
+    return (
+        <Suspense fallback={<main className="mx-auto max-w-3xl p-6" />}>
+            <PaperDetailPageContent />
+        </Suspense>
     );
 }

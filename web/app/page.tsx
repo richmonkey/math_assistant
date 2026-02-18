@@ -5,20 +5,14 @@ import { Button } from "primereact/button";
 import { useTheme } from "./theme-context";
 import { usePapers } from "./papers-context";
 import NewPaperDialog from "./components/NewPaperDialog";
-import ollama from 'ollama/browser'
 
-async function list_models() {
-    let res = await ollama.list();
-    console.log("Available models:", res);
 
-}
 export default function Home() {
     const { papers } = usePapers();
     const { theme, toggleTheme } = useTheme();
 
     const handleToggleTheme = () => {
         toggleTheme();
-        list_models();
     };
 
     return (
@@ -50,7 +44,7 @@ export default function Home() {
                         return (
                             <Link
                                 key={paper.id}
-                                href={`/papers/${paper.id}`}
+                                href={`/papers?paperId=${encodeURIComponent(paper.id)}`}
                                 className="group block rounded-lg border border-[var(--surface-border)] bg-[var(--surface)] p-5 transition-all hover:border-[var(--foreground)] hover:shadow-lg"
                             >
                                 <div className="mb-3 flex items-start justify-between gap-3">

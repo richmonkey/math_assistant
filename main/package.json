@@ -17,10 +17,10 @@
     "name": "main",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "main": "dist/main.bundle.js",
     "scripts": {
-        "build": "webpack --config webpack.main.config.ts",
-        "dev": "webpack --config webpack.main.config.ts --watch",
+        "build": "webpack --mode production --config webpack.main.config.ts",
+        "dev": "webpack --mode development --config webpack.main.config.ts --watch",
         "test": "ELECTRON_PATH=/Applications/Electron.app/Contents/MacOS/Electron electron-mocha --require ts-node/register --timeout 10000 \"test/**/*.test.ts\""
     },
     "author": "",
