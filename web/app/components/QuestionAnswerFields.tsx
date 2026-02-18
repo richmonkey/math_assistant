@@ -6,7 +6,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { QuestionType } from "../papers-context";
 import { useToast } from "../toast-context";
-import { performOcr } from "../lib/ocr";
+import { performAnswerOcr } from "../lib/ocr";
 import OcrPreviewModal from "./OcrPreviewModal";
 
 const blankDelimiter = " | ";
@@ -300,7 +300,7 @@ export default function QuestionAnswerFields({
         try {
             setIsOcring(true);
             const fileForOcr = croppedFile ?? pendingOcrFile;
-            const ocrText = await performOcr(fileForOcr);
+            const ocrText = await performAnswerOcr(fileForOcr);
             const nextValue = questionAnswer.trim()
                 ? `${questionAnswer}\n${ocrText}`
                 : ocrText;

@@ -17,7 +17,6 @@ type Question = {
     type: QuestionType;
     prompt: string;
     answer: string;
-    options?: Array<{ label: string; text: string }>;
 };
 
 type PaperInput = {

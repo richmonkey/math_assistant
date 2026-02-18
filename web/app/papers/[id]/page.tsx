@@ -42,6 +42,7 @@ const formatAnswer = (type: string, answer: string) => {
         .join("、");
 };
 
+
 export default function PaperDetailPage() {
     const params = useParams<{ id: string }>();
     const paperId = params?.id ?? "";
@@ -224,13 +225,10 @@ export default function PaperDetailPage() {
                                         key={question.id}
                                         className="rounded border border-[var(--surface-border)] p-4"
                                     >
-                                        <div className="mb-2 flex items-start justify-between gap-4">
-                                            <div className="flex-1">
-                                                <p className="text-sm text-[var(--muted)]">
-                                                    第 {index + 1} 题 · {questionTypeLabels[question.type]}
-                                                </p>
-                                                <AutoLatex className="mt-1 font-medium" text={question.prompt} />
-                                            </div>
+                                        <div className="mb-2 flex items-center justify-between gap-4">
+                                            <p className="text-sm text-[var(--muted)]">
+                                                第 {index + 1} 题 · {questionTypeLabels[question.type]}
+                                            </p>
                                             <div className="flex gap-2">
                                                 <EditQuestionDialog paperId={paper.id} question={question} />
                                                 <Button
@@ -242,6 +240,8 @@ export default function PaperDetailPage() {
                                                 />
                                             </div>
                                         </div>
+                                        <AutoLatex className="mb-2 font-medium" text={question.prompt} />
+
                                         <AutoLatex className="rounded bg-[var(--hover)] p-3 text-sm" text={`答案：${formatAnswer(question.type, question.answer)}`} />
                                     </li>
                                 ))}

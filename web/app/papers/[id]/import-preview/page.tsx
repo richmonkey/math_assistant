@@ -7,6 +7,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
+import AutoLatex from "../../../components/AutoLatex";
 import { useToast } from "../../../toast-context";
 import { usePapers, type QuestionType } from "../../../papers-context";
 
@@ -17,17 +18,13 @@ type ImportQuestionType =
     | "proof"
     | "unknown";
 
-type ImportOption = {
-    label: string;
-    text: string;
-};
+
 
 type ImportQuestion = {
     id: string;
     number: string;
     type: ImportQuestionType;
     content: string;
-    options: ImportOption[];
 };
 
 type ImportPayload = {
@@ -42,13 +39,6 @@ const questionTypeLabels: Record<ImportQuestionType, string> = {
     unknown: "未知类型",
 };
 
-const optionLabelPool = ["A", "B", "C", "D", "E", "F"];
-
-const ensureOptionLabels = (options: ImportOption[]) =>
-    options.map((option, index) => ({
-        label: option.label || optionLabelPool[index] || `${index + 1}`,
-        text: option.text || "",
-    }));
 
 const normalizeQuestions = (payload: ImportPayload | null) => {
     if (!payload?.questions?.length) {
@@ -60,7 +50,7 @@ const normalizeQuestions = (payload: ImportPayload | null) => {
         number: question.number || `${index + 1}`,
         type: question.type ?? "unknown",
         content: question.content ?? "",
-        options: ensureOptionLabels(question.options ?? []),
+        options: [],
     }));
 };
 
@@ -76,7 +66,6 @@ export default function ImportPreviewPage() {
     const [draftNumber, setDraftNumber] = useState("");
     const [draftType, setDraftType] = useState<ImportQuestionType>("unknown");
     const [draftContent, setDraftContent] = useState("");
-    const [draftOptions, setDraftOptions] = useState<ImportOption[]>([]);
 
     const mapImportType = (importType: ImportQuestionType): QuestionType => {
         switch (importType) {
@@ -104,7 +93,6 @@ export default function ImportPreviewPage() {
                 type: mapImportType(question.type),
                 prompt: question.content,
                 answer: "",
-                options: question.options,
             }));
 
             addQuestionsFromImport(paperId, importInputs);
@@ -145,7 +133,6 @@ export default function ImportPreviewPage() {
         setDraftNumber(question.number);
         setDraftType(question.type);
         setDraftContent(question.content);
-        setDraftOptions(question.options.length ? question.options : []);
         setIsDialogOpen(true);
     };
 
@@ -167,12 +154,6 @@ export default function ImportPreviewPage() {
                         number: draftNumber.trim() || item.number,
                         type: draftType,
                         content: draftContent.trim(),
-                        options: ensureOptionLabels(
-                            draftOptions.map((option) => ({
-                                ...option,
-                                text: option.text.trim(),
-                            }))
-                        ),
                     }
                     : item
             )
@@ -182,25 +163,6 @@ export default function ImportPreviewPage() {
 
     const handleDeleteQuestion = (id: string) => {
         setQuestions((current) => current.filter((item) => item.id !== id));
-    };
-
-    const updateOptionText = (index: number, value: string) => {
-        setDraftOptions((current) =>
-            current.map((option, optionIndex) =>
-                optionIndex === index ? { ...option, text: value } : option
-            )
-        );
-    };
-
-    const handleAddOption = () => {
-        setDraftOptions((current) => {
-            const nextLabel = optionLabelPool[current.length] ?? `${current.length + 1}`;
-            return [...current, { label: nextLabel, text: "" }];
-        });
-    };
-
-    const handleRemoveOption = (index: number) => {
-        setDraftOptions((current) => current.filter((_, optionIndex) => optionIndex !== index));
     };
 
     return (
@@ -247,9 +209,10 @@ export default function ImportPreviewPage() {
                                         <p className="text-sm text-[var(--muted)]">
                                             第 {question.number || index + 1} 题 · {questionTypeLabels[question.type]}
                                         </p>
-                                        <p className="mt-1 whitespace-pre-wrap font-medium">
-                                            {question.content || "（未识别到题干）"}
-                                        </p>
+                                        <AutoLatex
+                                            text={question.content || "（未识别到题干）"}
+                                            className="mt-1 font-medium"
+                                        />
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
@@ -267,15 +230,7 @@ export default function ImportPreviewPage() {
                                         />
                                     </div>
                                 </div>
-                                {question.options.length > 0 && (
-                                    <div className="rounded bg-[var(--hover)] p-3 text-sm">
-                                        {question.options.map((option) => (
-                                            <div key={`${question.id}-${option.label}`}>
-                                                {option.label}. {option.text || "（空）"}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+
                             </li>
                         ))}
                     </ul>
@@ -325,42 +280,7 @@ export default function ImportPreviewPage() {
                         />
                     </div>
                     <div>
-                        <div className="mb-2 flex items-center justify-between">
-                            <label className="text-sm text-[var(--foreground)]">选项</label>
-                            <Button
-                                label="新增选项"
-                                icon="pi pi-plus"
-                                size="small"
-                                outlined
-                                onClick={handleAddOption}
-                            />
-                        </div>
-                        {draftOptions.length === 0 ? (
-                            <p className="text-sm text-[var(--muted)]">无选项</p>
-                        ) : (
-                            <div className="flex flex-col gap-2">
-                                {draftOptions.map((option, index) => (
-                                    <div key={`option-${index}`} className="flex items-center gap-2">
-                                        <span className="w-6 text-sm text-[var(--muted)]">
-                                            {option.label}.
-                                        </span>
-                                        <InputText
-                                            value={option.text}
-                                            onChange={(event) =>
-                                                updateOptionText(index, event.target.value)
-                                            }
-                                            className="flex-1"
-                                        />
-                                        <Button
-                                            icon="pi pi-times"
-                                            severity="danger"
-                                            outlined
-                                            onClick={() => handleRemoveOption(index)}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <p className="text-sm text-[var(--muted)]">选择题选项不可编辑。</p>
                     </div>
                     <div className="flex justify-end gap-2">
                         <Button label="取消" severity="secondary" outlined onClick={closeDialog} />

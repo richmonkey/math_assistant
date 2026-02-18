@@ -49,6 +49,7 @@ const looksLikeLatex = (input: string) => {
     return /\\[a-zA-Z]+|[_^{}]|\\begin\{|\\end\{|\\frac|\\sqrt/.test(trimmed);
 };
 
+
 export const AutoCodeLatex = ({ text, className }: { text: string; className?: string }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 

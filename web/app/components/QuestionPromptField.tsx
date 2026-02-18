@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { InputTextarea } from "primereact/inputtextarea";
 import { useToast } from "../toast-context";
-import { performOcr } from "../lib/ocr";
+import { performQuestionOcr } from "../lib/ocr";
 import OcrPreviewModal from "./OcrPreviewModal";
 
 type QuestionPromptFieldProps = {
@@ -81,8 +81,8 @@ export default function QuestionPromptField({
         try {
             setIsOcring(true);
             const fileForOcr = croppedFile ?? pendingOcrFile;
-            const ocrText = await performOcr(fileForOcr);
-            const nextValue = value.trim() ? `${value}\n${ocrText}` : ocrText;
+            const q = await performQuestionOcr(fileForOcr);
+            const nextValue = value.trim() ? `${value}\n${q.content}` : q.content;
             onChange(nextValue);
             clearPreviewState();
         } catch (error) {

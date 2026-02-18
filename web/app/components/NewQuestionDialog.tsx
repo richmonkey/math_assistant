@@ -13,7 +13,7 @@ type NewQuestionDialogProps = {
 
 export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
     const { addQuestion } = usePapers();
-    const answerState = useAnswerState("single", "A");
+    const answerState = useAnswerState("single", "");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [questionType, setQuestionType] = useState<QuestionType>("single");
     const [questionPrompt, setQuestionPrompt] = useState("");
@@ -22,7 +22,7 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
     const openDialog = () => {
         setQuestionType("single");
         setQuestionPrompt("");
-        answerState.resetAnswerState("single", "A");
+        answerState.resetAnswerState("single", "");
         setDialogError("");
         setIsDialogOpen(true);
     };
