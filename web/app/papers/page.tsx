@@ -7,48 +7,17 @@ import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { Question, usePapers } from "../papers-context";
+import { usePapers } from "../papers-context";
 import NewQuestionDialog from "../components/NewQuestionDialog";
-import EditQuestionDialog from "../components/EditQuestionDialog";
-import EditAnswerDialog from "../components/EditAnswerDialog";
+import QuestionItem from "../components/QuestionItem";
 import { useToast } from "../toast-context";
-import AutoLatex from "../components/AutoLatex";
 import { load_paper_image } from "../lib/ocr";
 
-const questionTypeLabels: Record<string, string> = {
-    single: "单选题",
-    multiple: "多选题",
-    blank: "填空题",
-    essay: "解答题",
-};
-
-const blankDelimiter = " | ";
-
-const formatAnswer = (type: string, answer: string) => {
-    return answer;
-
-    // if (type !== "blank") {
-    //     return answer;
-    // }
-
-    // const segments = answer
-    //     .split(blankDelimiter)
-    //     .map((item) => item.trim())
-    //     .filter(Boolean);
-
-    // if (!segments.length) {
-    //     return answer;
-    // }
-
-    // return segments
-    //     .map((segment, index) => `答案${index + 1}：${segment}`)
-    //     .join("、");
-};
 
 function PaperDetailPageContent() {
     const searchParams = useSearchParams();
     const paperId = searchParams.get("paperId") ?? "";
-    const { getPaperById, updatePaper, updateQuestionNoteId, deleteQuestion } = usePapers();
+    const { getPaperById, updatePaper } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
     const router = useRouter();
     const [title, setTitle] = useState("");
@@ -57,9 +26,7 @@ function PaperDetailPageContent() {
     const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
-    const { showError, showMessage } = useToast();
-
-    const hasNotesAPI = typeof window !== 'undefined' && window.notesAPI !== undefined;
+    const { showError } = useToast();
 
     useEffect(() => {
         if (!paper) {
@@ -118,36 +85,6 @@ function PaperDetailPageContent() {
             showError("请确保上传的是清晰的试卷图片，并且图片中仅包含打印内容。", "导入失败");
         } finally {
             setIsImporting(false);
-        }
-    };
-
-    const handleCreateNote = async (index: number, question: Question) => {
-        if (!window.notesAPI || !paper) {
-            return;
-        }
-
-        try {
-            // 如果已有笔记 ID，直接打开
-            if (question.noteId) {
-                const res = await window.notesAPI.openNote(question.noteId);
-                if (!res) {
-                    showMessage({ detail: "无法打开旧笔记，可能已被删除。正在创建新笔记...", severity: "warn" });
-                } else {
-                    return;
-                }
-            }
-
-            // 否则创建新笔记
-            const noteContent = ``;
-            const noteId = await window.notesAPI.createNote(noteContent);
-
-            // 保存笔记 ID
-            if (noteId) {
-                updateQuestionNoteId(paper.id, question.id, noteId);
-            }
-        } catch (error) {
-            console.error("Failed to create/open note:", error);
-            showError("操作笔记失败，请重试。", "错误");
         }
     };
 
@@ -245,6 +182,13 @@ function PaperDetailPageContent() {
                                     onClick={handleImportClick}
                                 />
                                 <NewQuestionDialog paperId={paper.id} />
+                                <Link href={`/papers/grading?paperId=${encodeURIComponent(paperId)}`}>
+                                    <Button
+                                        label="阅卷"
+                                        icon="pi pi-check-circle"
+                                        outlined
+                                    />
+                                </Link>
                             </div>
                         </div>
 
@@ -254,38 +198,12 @@ function PaperDetailPageContent() {
                         ) : (
                             <ul className="mb-4 space-y-3">
                                 {paper.questions.map((question, index) => (
-                                    <li
+                                    <QuestionItem
                                         key={question.id}
-                                        className="rounded border border-[var(--surface-border)] p-4"
-                                    >
-                                        <div className="mb-2 flex items-center justify-between gap-4">
-                                            <p className="text-sm text-[var(--muted)]">
-                                                第 {index + 1} 题 · {questionTypeLabels[question.type]}
-                                            </p>
-                                            <div className="flex gap-2">
-                                                {hasNotesAPI && (
-                                                    <Button
-                                                        label="笔记"
-                                                        icon="pi pi-book"
-                                                        outlined
-                                                        onClick={() => handleCreateNote(index, question)}
-                                                    />
-                                                )}
-                                                <EditAnswerDialog paperId={paper.id} question={question} />
-                                                <EditQuestionDialog paperId={paper.id} question={question} />
-                                                <Button
-                                                    label="删除"
-                                                    icon="pi pi-trash"
-                                                    severity="danger"
-                                                    outlined
-                                                    onClick={() => deleteQuestion(paper.id, question.id)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <AutoLatex className="mb-2 font-medium" text={question.prompt} />
-
-                                        <AutoLatex className="rounded bg-[var(--hover)] p-3 text-sm" text={`答案：${formatAnswer(question.type, question.answer)}`} />
-                                    </li>
+                                        paperId={paperId}
+                                        question={question}
+                                        index={index}
+                                    />
                                 ))}
                             </ul>
                         )}
@@ -303,4 +221,4 @@ export default function PaperDetailPage() {
             <PaperDetailPageContent />
         </Suspense>
     );
-}
+}    
