@@ -17,6 +17,7 @@ type Question = {
     type: QuestionType;
     prompt: string;
     answer: string;
+    noteId?: string;
 };
 
 type PaperInput = {
@@ -32,6 +33,7 @@ type PapersContextValue = {
     updatePaper: (id: string, update: PaperUpdate) => void;
     addQuestion: (paperId: string, input: QuestionInput) => void;
     updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => void;
+    updateQuestionNoteId: (paperId: string, questionId: string, noteId: string) => void;
     deleteQuestion: (paperId: string, questionId: string) => void;
     getPaperById: (id: string) => Paper | undefined;
     addQuestionsFromImport: (paperId: string, inputs: ImportQuestionInput[]) => void;
@@ -176,6 +178,24 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
+    const updateQuestionNoteId = (paperId: string, questionId: string, noteId: string) => {
+        setPapers((current) =>
+            current.map((paper) =>
+                paper.id === paperId
+                    ? {
+                        ...paper,
+                        questions: paper.questions.map((question) =>
+                            question.id === questionId
+                                ? { ...question, noteId }
+                                : question
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : paper
+            )
+        );
+    };
+
     const deleteQuestion = (paperId: string, questionId: string) => {
         setPapers((current) =>
             current.map((paper) =>
@@ -221,6 +241,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             updatePaper,
             addQuestion,
             updateQuestion,
+            updateQuestionNoteId,
             deleteQuestion,
             getPaperById,
             addQuestionsFromImport,

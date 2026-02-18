@@ -7,7 +7,7 @@ import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { usePapers } from "../papers-context";
+import { Question, usePapers } from "../papers-context";
 import NewQuestionDialog from "../components/NewQuestionDialog";
 import EditQuestionDialog from "../components/EditQuestionDialog";
 import { useToast } from "../toast-context";
@@ -45,7 +45,7 @@ const formatAnswer = (type: string, answer: string) => {
 function PaperDetailPageContent() {
     const searchParams = useSearchParams();
     const paperId = searchParams.get("paperId") ?? "";
-    const { getPaperById, updatePaper, deleteQuestion } = usePapers();
+    const { getPaperById, updatePaper, updateQuestionNoteId, deleteQuestion } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
     const router = useRouter();
     const [title, setTitle] = useState("");
@@ -54,7 +54,9 @@ function PaperDetailPageContent() {
     const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
-    const { showError } = useToast();
+    const { showError, showMessage } = useToast();
+
+    const hasNotesAPI = typeof window !== 'undefined' && window.notesAPI !== undefined;
 
     useEffect(() => {
         if (!paper) {
@@ -113,6 +115,36 @@ function PaperDetailPageContent() {
             showError("请确保上传的是清晰的试卷图片，并且图片中仅包含打印内容。", "导入失败");
         } finally {
             setIsImporting(false);
+        }
+    };
+
+    const handleCreateNote = async (index: number, question: Question) => {
+        if (!window.notesAPI || !paper) {
+            return;
+        }
+
+        try {
+            // 如果已有笔记 ID，直接打开
+            if (question.noteId) {
+                const res = await window.notesAPI.openNote(question.noteId);
+                if (!res) {
+                    showMessage({ detail: "无法打开旧笔记，可能已被删除。正在创建新笔记...", severity: "warn" });
+                } else {
+                    return;
+                }
+            }
+
+            // 否则创建新笔记
+            const noteContent = ``;
+            const noteId = await window.notesAPI.createNote(noteContent);
+
+            // 保存笔记 ID
+            if (noteId) {
+                updateQuestionNoteId(paper.id, question.id, noteId);
+            }
+        } catch (error) {
+            console.error("Failed to create/open note:", error);
+            showError("操作笔记失败，请重试。", "错误");
         }
     };
 
@@ -213,6 +245,7 @@ function PaperDetailPageContent() {
                             </div>
                         </div>
 
+
                         {paper.questions.length === 0 ? (
                             <p className="mb-4 text-sm text-[var(--muted)]">暂无题目，请添加新的题目。</p>
                         ) : (
@@ -227,6 +260,14 @@ function PaperDetailPageContent() {
                                                 第 {index + 1} 题 · {questionTypeLabels[question.type]}
                                             </p>
                                             <div className="flex gap-2">
+                                                {hasNotesAPI && (
+                                                    <Button
+                                                        label="笔记"
+                                                        icon="pi pi-book"
+                                                        outlined
+                                                        onClick={() => handleCreateNote(index, question)}
+                                                    />
+                                                )}
                                                 <EditQuestionDialog paperId={paper.id} question={question} />
                                                 <Button
                                                     label="删除"

@@ -46,6 +46,11 @@ ipcMain.handle('create-note', async (event, content) => {
 
 
 ipcMain.handle('open-note', async (event, noteId) => {
-    return openNote(noteId);
+    try {
+        let r = await openNote(noteId);
+        return r == "success";
+    } catch (e) {
+        return false;
+    }
 });
 

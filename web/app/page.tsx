@@ -15,6 +15,7 @@ export default function Home() {
         toggleTheme();
     };
 
+
     return (
         <main className="mx-auto max-w-3xl p-6">
             <div className="mb-6 flex items-center justify-between">

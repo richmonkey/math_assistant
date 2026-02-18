@@ -35,8 +35,25 @@ export function openNote(noteId: string, timeout: number = 5000): Promise<string
       tell application "Notes"
         activate
         try
-          show note id "${noteId}"
-          return "success"
+            -- 1. 先获取 Note 对象引用
+            set targetNote to note id "${noteId}"
+            
+            -- 2. 显式检查是否存在 (修复不返回 not_found 的问题)
+            if not (exists targetNote) then
+                return "not_found"
+            end if
+            
+            -- 3. 核心修复：为了确保 UI 选中，先显示它所在的文件夹，再显示笔记
+            set parentFolder to container of targetNote
+            show parentFolder
+            
+            -- 4. 稍微延迟一下以确保 UI 刷新 (可选，视系统速度而定)
+            delay 0.1
+            
+            -- 5. 显示笔记
+            show targetNote
+            
+            return "success"
         on error errMsg
           return "not_found"
         end try
