@@ -1,0 +1,31 @@
+{
+    "devDependencies": {
+        "@types/chai": "^5.2.3",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^25.2.3",
+        "@types/webpack": "^5.28.5",
+        "chai": "^6.2.2",
+        "electron": "40.4.1",
+        "electron-mocha": "^13.1.0",
+        "mocha": "^11.7.5",
+        "ts-loader": "^9.5.4",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3",
+        "webpack": "^5.105.2",
+        "webpack-cli": "^6.0.1"
+    },
+    "name": "main",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "webpack --config webpack.main.config.ts",
+        "dev": "webpack --config webpack.main.config.ts --watch",
+        "test": "ELECTRON_PATH=/Applications/Electron.app/Contents/MacOS/Electron electron-mocha --require ts-node/register --timeout 10000 \"test/**/*.test.ts\""
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "ollama": "^0.6.3"
+    }
+}
