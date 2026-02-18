@@ -140,7 +140,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             id: `q-${Date.now()}`,
             type: input.type,
             prompt: input.prompt,
-            answer: input.answer,
+            answer: input.answer ?? "",
         };
         setPapers((current) =>
             current.map((paper) =>
@@ -167,7 +167,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
                                     ...question,
                                     type: update.type,
                                     prompt: update.prompt,
-                                    answer: update.answer,
+                                    answer: update.answer ?? question.answer,
                                 }
                                 : question
                         ),
@@ -219,7 +219,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             id: `q-${Date.now()}-${index}`,
             type: input.type,
             prompt: input.prompt,
-            answer: input.answer,
+            answer: input.answer ?? "",
         }));
         setPapers((current) =>
             current.map((paper) =>
@@ -263,13 +263,13 @@ export function usePapers() {
 type QuestionInput = {
     type: QuestionType;
     prompt: string;
-    answer: string;
+    answer?: string;
 };
 
 type ImportQuestionInput = {
     type: QuestionType;
     prompt: string;
-    answer: string;
+    answer?: string;
 };
 
 export type { Paper, Question, QuestionType, ImportQuestionInput };

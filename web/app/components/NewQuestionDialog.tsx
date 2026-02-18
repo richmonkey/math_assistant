@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { QuestionType, usePapers } from "../papers-context";
-import QuestionAnswerFields, { useAnswerState } from "./QuestionAnswerFields";
 import QuestionPromptField from "./QuestionPromptField";
 
 type NewQuestionDialogProps = {
@@ -13,7 +12,6 @@ type NewQuestionDialogProps = {
 
 export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
     const { addQuestion } = usePapers();
-    const answerState = useAnswerState("single", "");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [questionType, setQuestionType] = useState<QuestionType>("single");
     const [questionPrompt, setQuestionPrompt] = useState("");
@@ -22,7 +20,6 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
     const openDialog = () => {
         setQuestionType("single");
         setQuestionPrompt("");
-        answerState.resetAnswerState("single", "");
         setDialogError("");
         setIsDialogOpen(true);
     };
@@ -33,16 +30,13 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
 
     const handleAddQuestion = () => {
         const trimmedPrompt = questionPrompt.trim();
-        const resolvedAnswer = answerState.getResolvedAnswer(questionType);
-
-        if (!trimmedPrompt || !resolvedAnswer) {
-            setDialogError("请填写题目内容和答案");
+        if (!trimmedPrompt) {
+            setDialogError("请填写题目内容");
             return;
         }
         addQuestion(paperId, {
             type: questionType,
             prompt: trimmedPrompt,
-            answer: resolvedAnswer,
         });
         setIsDialogOpen(false);
     };
@@ -50,7 +44,6 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
     const handleQuestionTypeChange = (value: QuestionType) => {
         setQuestionType(value);
         setDialogError("");
-        answerState.syncAnswerType(value);
     };
 
     return (
@@ -82,19 +75,6 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
                         value={questionPrompt}
                         onChange={setQuestionPrompt}
                         isDialogOpen={isDialogOpen}
-                    />
-                    <QuestionAnswerFields
-                        questionType={questionType}
-                        questionAnswer={answerState.questionAnswer}
-                        blankAnswers={answerState.blankAnswers}
-                        choiceAnswers={answerState.choiceAnswers}
-                        onQuestionAnswerChange={answerState.setQuestionAnswer}
-                        onBlankAnswerChange={answerState.handleBlankAnswerChange}
-                        onAddBlankAnswer={answerState.addBlankAnswer}
-                        onRemoveBlankAnswer={answerState.removeBlankAnswer}
-                        onChoiceAnswerChange={answerState.handleChoiceAnswerChange}
-                        onAddChoiceAnswer={answerState.addChoiceAnswer}
-                        onRemoveChoiceAnswer={answerState.removeChoiceAnswer}
                     />
                     {dialogError && <p className="text-sm text-red-400">{dialogError}</p>}
                     <div className="flex justify-end gap-2">

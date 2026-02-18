@@ -10,6 +10,7 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { Question, usePapers } from "../papers-context";
 import NewQuestionDialog from "../components/NewQuestionDialog";
 import EditQuestionDialog from "../components/EditQuestionDialog";
+import EditAnswerDialog from "../components/EditAnswerDialog";
 import { useToast } from "../toast-context";
 import AutoLatex from "../components/AutoLatex";
 import { load_paper_image } from "../lib/ocr";
@@ -24,22 +25,24 @@ const questionTypeLabels: Record<string, string> = {
 const blankDelimiter = " | ";
 
 const formatAnswer = (type: string, answer: string) => {
-    if (type !== "blank") {
-        return answer;
-    }
+    return answer;
 
-    const segments = answer
-        .split(blankDelimiter)
-        .map((item) => item.trim())
-        .filter(Boolean);
+    // if (type !== "blank") {
+    //     return answer;
+    // }
 
-    if (!segments.length) {
-        return answer;
-    }
+    // const segments = answer
+    //     .split(blankDelimiter)
+    //     .map((item) => item.trim())
+    //     .filter(Boolean);
 
-    return segments
-        .map((segment, index) => `答案${index + 1}：${segment}`)
-        .join("、");
+    // if (!segments.length) {
+    //     return answer;
+    // }
+
+    // return segments
+    //     .map((segment, index) => `答案${index + 1}：${segment}`)
+    //     .join("、");
 };
 
 function PaperDetailPageContent() {
@@ -268,6 +271,7 @@ function PaperDetailPageContent() {
                                                         onClick={() => handleCreateNote(index, question)}
                                                     />
                                                 )}
+                                                <EditAnswerDialog paperId={paper.id} question={question} />
                                                 <EditQuestionDialog paperId={paper.id} question={question} />
                                                 <Button
                                                     label="删除"
@@ -288,6 +292,7 @@ function PaperDetailPageContent() {
                     </section>
                 </>
             )}
+
         </main>
     );
 }

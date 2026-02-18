@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { QuestionType, usePapers, type Question } from "../papers-context";
-import QuestionAnswerFields, { useAnswerState } from "./QuestionAnswerFields";
 import QuestionPromptField from "./QuestionPromptField";
 
 type EditQuestionDialogProps = {
@@ -19,7 +18,6 @@ export default function EditQuestionDialog({
     trigger,
 }: EditQuestionDialogProps) {
     const { updateQuestion } = usePapers();
-    const answerState = useAnswerState(question.type, question.answer);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [questionType, setQuestionType] = useState(question.type);
     const [questionPrompt, setQuestionPrompt] = useState(question.prompt);
@@ -29,7 +27,6 @@ export default function EditQuestionDialog({
         if (isDialogOpen) {
             setQuestionType(question.type);
             setQuestionPrompt(question.prompt);
-            answerState.resetAnswerState(question.type, question.answer);
             setDialogError("");
         }
     }, [isDialogOpen, question]);
@@ -44,7 +41,6 @@ export default function EditQuestionDialog({
 
     const handleUpdateQuestion = () => {
         const trimmedPrompt = questionPrompt.trim();
-        const resolvedAnswer = answerState.getResolvedAnswer(questionType);
 
         if (!trimmedPrompt) {
             setDialogError("请填写题目内容");
@@ -53,7 +49,6 @@ export default function EditQuestionDialog({
         updateQuestion(paperId, question.id, {
             type: questionType,
             prompt: trimmedPrompt,
-            answer: resolvedAnswer,
         });
         setIsDialogOpen(false);
     };
@@ -61,7 +56,6 @@ export default function EditQuestionDialog({
     const handleQuestionTypeChange = (value: QuestionType) => {
         setQuestionType(value);
         setDialogError("");
-        answerState.syncAnswerType(value);
     };
 
     return (
@@ -97,19 +91,6 @@ export default function EditQuestionDialog({
                         value={questionPrompt}
                         onChange={setQuestionPrompt}
                         isDialogOpen={isDialogOpen}
-                    />
-                    <QuestionAnswerFields
-                        questionType={questionType}
-                        questionAnswer={answerState.questionAnswer}
-                        blankAnswers={answerState.blankAnswers}
-                        choiceAnswers={answerState.choiceAnswers}
-                        onQuestionAnswerChange={answerState.setQuestionAnswer}
-                        onBlankAnswerChange={answerState.handleBlankAnswerChange}
-                        onAddBlankAnswer={answerState.addBlankAnswer}
-                        onRemoveBlankAnswer={answerState.removeBlankAnswer}
-                        onChoiceAnswerChange={answerState.handleChoiceAnswerChange}
-                        onAddChoiceAnswer={answerState.addChoiceAnswer}
-                        onRemoveChoiceAnswer={answerState.removeChoiceAnswer}
                     />
                     {dialogError && <p className="text-sm text-red-400">{dialogError}</p>}
                     <div className="flex justify-end gap-2">

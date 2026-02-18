@@ -113,6 +113,7 @@ const normalizeAnswerState = (type: QuestionType, state: AnswerState): AnswerSta
 
 const resolveAnswerValue = (type: QuestionType, state: AnswerState) => {
     if (type === "blank") {
+
         return state.blankAnswers
             .map((item) => item.trim())
             .filter(Boolean)
