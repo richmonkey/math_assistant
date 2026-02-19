@@ -1,5 +1,13 @@
 export interface Config {
-    ollamaHost?: string;
+    ollama?: {
+        host: string;
+    };
+    openai?: {
+        apiKey: string;
+        baseURL: string;
+        model: string;
+        vlModel?: string;
+    }
 }
 
 export interface NotesAPI {

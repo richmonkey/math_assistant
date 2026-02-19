@@ -1,4 +1,4 @@
-import { getOllama } from "./ollama";
+import { chatCompletions } from "./ai";
 
 export type PaperQuestion = {
     number: string;
@@ -97,21 +97,8 @@ function parseOcrJson<T>(raw: string): T {
 }
 
 async function _performOcr(file: File, prompt: string): Promise<string> {
-    const ollama = getOllama();
-    const arrayBuffer = await file.arrayBuffer();
-    const encodedImage = await ollama.encodeImage(new Uint8Array(arrayBuffer));
-    const response = await ollama.chat({
-        model: "qwen3-vl:8b-instruct",
-        messages: [
-            {
-                role: "user",
-                content: prompt,
-                images: [encodedImage],
-            },
-        ],
-    });
-
-    return response.message.content?.trim() ?? "";
+    const content = await chatCompletions(prompt, file);
+    return content.trim();
 }
 
 export async function load_paper_image(img: File): Promise<PaperQuestion[]> {

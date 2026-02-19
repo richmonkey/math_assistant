@@ -1,11 +1,14 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'node:path';
 import { createNote, openNote } from './note';
+import serve from 'electron-serve';
 import { getConfigFileName, loadConfig } from "./config";
+
+const loadURL = serve({ directory: path.join(__dirname, 'out') });
 
 const isDev = process.env.NODE_ENV === 'development';
 
-function createWindow() {
+async function createWindow() {
     const win = new BrowserWindow({
         width: 1024,
         height: 800,
@@ -26,7 +29,9 @@ function createWindow() {
         // 开发模式下自动打开调试工具
         win.webContents.openDevTools();
     } else {
-        win.loadFile('index.html');
+        //const filePath = __dirname + "/out/index.html";
+        //win.loadFile(filePath);
+        loadURL(win);
     }
 }
 

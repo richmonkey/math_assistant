@@ -6,27 +6,68 @@
         "@types/webpack": "^5.28.5",
         "chai": "^6.2.2",
         "electron": "40.4.1",
+        "electron-builder": "^26.8.1",
         "electron-mocha": "^13.1.0",
         "mocha": "^11.7.5",
         "ts-loader": "^9.5.4",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3",
         "webpack": "^5.105.2",
-        "webpack-cli": "^6.0.1"
+        "webpack-cli": "^6.0.1",
+        "electron-serve": "^3.0.1"
     },
-    "name": "main",
+    "name": "math_assistant",
     "version": "1.0.0",
+    "productName": "Math Assistant",
     "description": "",
     "main": "dist/main.bundle.js",
+    "build": {
+        "appId": "com.beetle.math",
+        "files": [
+            "dist",
+            "!dist/*.js.map"
+        ],
+        "directories": {
+            "output": "releases"
+        },
+        "mac": {
+            "identity": "Apple Development: Xuehua Hou (2QKR9CK4M8)",
+            "entitlements": "build/entitlements.mac.plist",
+            "extendInfo": {
+                "NSMicrophoneUsageDescription": "Please allow this app to access your microphone.",
+                "NSCameraUsageDescription": "Please allow this app to access your camera."
+            },
+            "target": {
+                "target": "default"
+            }
+        },
+        "win": {
+            "target": "nsis"
+        },
+        "nsis": {
+            "perMachine": true,
+            "deleteAppDataOnUninstall": true
+        },
+        "asar": false,
+        "asarUnpack": [
+            "dist/bin"
+        ],
+        "npmRebuild": false,
+        "electronVersion": "40.4.1"
+    },
     "scripts": {
         "build": "webpack --mode production --config webpack.main.config.ts",
         "dev": "webpack --mode development --config webpack.main.config.ts --watch",
         "test": "ELECTRON_PATH=/Applications/Electron.app/Contents/MacOS/Electron electron-mocha --require ts-node/register --timeout 10000 \"test/**/*.test.ts\"",
-        "start": "open /Applications/Electron.app  --args $(pwd)/"
+        "start": "open /Applications/Electron.app  --args $(pwd)/",
+        "packWin64": "electron-builder --win --x64 --dir",
+        "distWin64": "electron-builder --win --x64",
+        "packMac": "electron-builder --mac --dir",
+        "distMac": "electron-builder --mac --universal",
+        "pack": "electron-builder --dir",
+        "dist": "electron-builder --win --x64 && electron-builder --mac"
     },
     "author": "",
     "license": "ISC",
-    "dependencies": {
-        "ollama": "^0.6.3"
-    }
+    "dependencies": {}
 }

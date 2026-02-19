@@ -1,4 +1,4 @@
-import { getOllama } from "./ollama";
+import { chatCompletions } from "./ai";
 
 export type QuestionGradingResult = {
     questionId: string;
@@ -49,18 +49,9 @@ export async function gradeQuestion(
 - 如果学生答案为空或明显错误，给0分`;
 
     try {
-        const ollama = getOllama();
-        const response = await ollama.chat({
-            model: "qwen3-vl:8b-instruct",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-        });
+        let content = await chatCompletions(prompt);
+        content = content.trim();
 
-        const content = response.message.content?.trim() ?? "";
         const jsonStart = content.indexOf("{");
         const jsonEnd = content.lastIndexOf("}");
 
@@ -127,18 +118,8 @@ ${questionSummary}
 - 只返回评语文本，不要有其他格式`;
 
     try {
-        const ollama = getOllama();
-        const response = await ollama.chat({
-            model: "qwen3-vl:8b-instruct",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-        });
-
-        return response.message.content?.trim() ?? "评语生成失败，请稍后重试。";
+        const content = await chatCompletions(prompt);
+        return content.trim() ?? "评语生成失败，请稍后重试。";
     } catch (error) {
         console.error("Error generating overall comment:", error);
         return "评语生成过程中出现错误，请稍后重试。";
