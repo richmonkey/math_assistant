@@ -4,10 +4,12 @@ import { PrimeReactProvider } from 'primereact/api';
 import { ThemeProvider } from "./theme-context";
 import { PapersProvider } from "./papers-context";
 import { ToastProvider } from "./toast-context";
+import OllamaInitializer from "./components/OllamaInitializer";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import "./globals.css";
+
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -37,7 +39,9 @@ export default function RootLayout({
                 <PrimeReactProvider>
                     <ThemeProvider>
                         <PapersProvider>
-                            <ToastProvider>{children}</ToastProvider>
+                            <ToastProvider>
+                                <OllamaInitializer>{children}</OllamaInitializer>
+                            </ToastProvider>
                         </PapersProvider>
                     </ThemeProvider>
                 </PrimeReactProvider>

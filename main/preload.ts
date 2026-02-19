@@ -5,5 +5,8 @@ contextBridge.exposeInMainWorld('notesAPI', {
     createNote: (content: string) => ipcRenderer.invoke('create-note', content),
 
     // 发送打开请求
-    openNote: (id: string) => ipcRenderer.invoke('open-note', id)
+    openNote: (id: string) => ipcRenderer.invoke('open-note', id),
+
+    // 发送加载配置请求
+    loadConfig: () => ipcRenderer.invoke('load-config'),
 });

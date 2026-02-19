@@ -1,4 +1,4 @@
-import ollama from "ollama/browser";
+import { getOllama } from "./ollama";
 
 export type QuestionGradingResult = {
     questionId: string;
@@ -49,6 +49,7 @@ export async function gradeQuestion(
 - 如果学生答案为空或明显错误，给0分`;
 
     try {
+        const ollama = getOllama();
         const response = await ollama.chat({
             model: "qwen3-vl:8b-instruct",
             messages: [
@@ -126,6 +127,7 @@ ${questionSummary}
 - 只返回评语文本，不要有其他格式`;
 
     try {
+        const ollama = getOllama();
         const response = await ollama.chat({
             model: "qwen3-vl:8b-instruct",
             messages: [

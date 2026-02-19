@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'node:path';
 import { createNote, openNote } from './note';
+import { getConfigFileName, loadConfig } from "./config";
+
 const isDev = process.env.NODE_ENV === 'development';
 
 function createWindow() {
@@ -54,3 +56,9 @@ ipcMain.handle('open-note', async (event, noteId) => {
     }
 });
 
+ipcMain.handle("load-config", async (event) => {
+    const userDataPath = app.getPath('userData');
+    const filename = getConfigFileName(userDataPath);
+    const config = await loadConfig(filename);
+    return config;
+});

@@ -1,4 +1,4 @@
-import ollama from "ollama/browser";
+import { getOllama } from "./ollama";
 
 export type PaperQuestion = {
     number: string;
@@ -97,6 +97,7 @@ function parseOcrJson<T>(raw: string): T {
 }
 
 async function _performOcr(file: File, prompt: string): Promise<string> {
+    const ollama = getOllama();
     const arrayBuffer = await file.arrayBuffer();
     const encodedImage = await ollama.encodeImage(new Uint8Array(arrayBuffer));
     const response = await ollama.chat({
