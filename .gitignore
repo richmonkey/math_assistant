@@ -1,3 +1,8 @@
 .DS_Store
 main/releases
 apiKey.txt
+.venv
+__pycache__
+app.db
+math.md
+config.py
