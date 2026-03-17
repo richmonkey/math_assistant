@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "primereact/button";
 import { useTheme } from "./theme-context";
@@ -8,8 +9,12 @@ import NewPaperDialog from "./components/NewPaperDialog";
 
 
 export default function Home() {
-    const { papers } = usePapers();
+    const { papers, syncPapersFromServer } = usePapers();
     const { theme, toggleTheme } = useTheme();
+
+    useEffect(() => {
+        void syncPapersFromServer();
+    }, [syncPapersFromServer]);
 
     const handleToggleTheme = () => {
         toggleTheme();

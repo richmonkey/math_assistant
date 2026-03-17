@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Button } from "primereact/button";
 import AutoLatex from "../../components/AutoLatex";
 import { useToast } from "../../toast-context";
@@ -54,7 +54,6 @@ function ImportPreviewPageContent() {
     const router = useRouter();
     const { showError } = useToast();
     const { addQuestionsFromImport } = usePapers();
-    const [questions, setQuestions] = useState<ImportQuestion[]>([]);
 
     const mapImportType = (importType: ImportQuestionType): QuestionType => {
         switch (importType) {
@@ -78,7 +77,25 @@ function ImportPreviewPageContent() {
         return `import-preview-${paperId}`;
     }, [paperId]);
 
-    const handleImport = () => {
+    const [questions, setQuestions] = useState<ImportQuestion[]>(() => {
+        if (typeof window === "undefined" || !paperId) {
+            return [];
+        }
+
+        try {
+            const stored = sessionStorage.getItem(`import-preview-${paperId}`);
+            if (!stored) {
+                return [];
+            }
+            const parsed = JSON.parse(stored) as ImportPayload;
+            return normalizeQuestions(parsed);
+        } catch (error) {
+            console.error("Failed to parse import preview:", error);
+            return [];
+        }
+    });
+
+    const handleImport = async () => {
         if (questions.length === 0) {
             showError("没有题目可导入", "导入失败");
             return;
@@ -91,7 +108,11 @@ function ImportPreviewPageContent() {
                 answer: "",
             }));
 
-            addQuestionsFromImport(paperId, importInputs);
+            const success = await addQuestionsFromImport(paperId, importInputs);
+            if (!success) {
+                showError("导入失败，请检查登录状态或稍后重试。", "导入失败");
+                return;
+            }
             sessionStorage.removeItem(storageKey);
             router.push(`/papers?paperId=${encodeURIComponent(paperId)}`);
         } catch (error) {
@@ -99,23 +120,6 @@ function ImportPreviewPageContent() {
             showError("导入失败，请稍后重试。", "导入失败");
         }
     };
-
-    useEffect(() => {
-        if (!storageKey) {
-            return;
-        }
-        try {
-            const stored = sessionStorage.getItem(storageKey);
-            if (!stored) {
-                return;
-            }
-            const parsed = JSON.parse(stored) as ImportPayload;
-            setQuestions(normalizeQuestions(parsed));
-        } catch (error) {
-            console.error("Failed to parse import preview:", error);
-            showError("导入预览数据解析失败，请重新导入试卷。", "导入失败");
-        }
-    }, [storageKey, showError]);
 
     const openEditPage = (question: ImportQuestion) => {
         // Persist current state (with ids) so the edit page can read/update it

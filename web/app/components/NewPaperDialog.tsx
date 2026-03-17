@@ -29,16 +29,21 @@ export default function NewPaperDialog({ nextIndex }: NewPaperDialogProps) {
         setIsDialogOpen(false);
     };
 
-    const handleAddPaper = () => {
+    const handleAddPaper = async () => {
         if (!paperTitle.trim()) {
             setDialogError("请填写试卷标题");
             return;
         }
-        addPaper({
-            title: paperTitle.trim(),
-            description: paperDescription.trim(),
-        });
-        setIsDialogOpen(false);
+        try {
+            await addPaper({
+                title: paperTitle.trim(),
+                description: paperDescription.trim(),
+            });
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to create paper:", error);
+            setDialogError("创建试卷失败，请检查登录状态或稍后重试");
+        }
     };
 
     return (

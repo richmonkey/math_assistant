@@ -53,3 +53,7 @@ body {
     background: var(--surface) !important;
     border-top: 1px solid var(--surface-border) !important;
 }
+
+.ML__keyboard {
+    z-index: 10000;
+}

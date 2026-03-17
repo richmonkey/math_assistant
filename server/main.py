@@ -46,9 +46,9 @@ def ensure_default_user() -> None:
 
 
 app = FastAPI(title="Math Assistant Auth Service", lifespan=lifespan)
-app.include_router(auth_router)
-app.include_router(paper_router)
-app.include_router(question_router)
+app.include_router(auth_router, prefix="/v1")
+app.include_router(paper_router, prefix="/v1")
+app.include_router(question_router, prefix="/v1")
 
 
 # print("hash:", hash_password("1"))

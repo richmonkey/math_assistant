@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { usePapers } from "../../papers-context";
@@ -20,16 +20,22 @@ function EditAnswerPageContent() {
     const router = useRouter();
 
     const answerState = useAnswerState(question?.type ?? "essay", question?.answer ?? "");
+    const [error, setError] = useState("");
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!question) return;
         const resolvedAnswer = answerState.getResolvedAnswer(question.type);
-        updateQuestion(paperId, question.id, {
-            type: question.type,
-            prompt: question.prompt,
-            answer: resolvedAnswer,
-        });
-        router.back();
+        try {
+            await updateQuestion(paperId, question.id, {
+                type: question.type,
+                prompt: question.prompt,
+                answer: resolvedAnswer,
+            });
+            router.back();
+        } catch (err) {
+            console.error("Failed to update answer:", err);
+            setError("保存失败，请检查登录状态或稍后重试");
+        }
     };
 
     if (!question) {
@@ -70,6 +76,7 @@ function EditAnswerPageContent() {
                     onAddChoiceAnswer={answerState.addChoiceAnswer}
                     onRemoveChoiceAnswer={answerState.removeChoiceAnswer}
                 />
+                {error && <p className="text-sm text-red-400">{error}</p>}
                 <div className="flex justify-end gap-2">
                     <Button label="取消" severity="secondary" outlined onClick={() => router.back()} />
                     <Button label="保存" icon="pi pi-check" onClick={handleSave} />

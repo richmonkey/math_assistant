@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
@@ -16,8 +16,26 @@ import { load_paper_image } from "../lib/ocr";
 function PaperDetailPageContent() {
     const searchParams = useSearchParams();
     const paperId = searchParams.get("paperId") ?? "";
-    const { getPaperById, updatePaper } = usePapers();
-    const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
+    const { papers, getPaperById, updatePaper, syncPaperById } = usePapers();
+    const [paper, setPaper] = useState(() => getPaperById(paperId));
+
+    useEffect(() => {
+        if (!paperId) {
+            setPaper(undefined);
+            return;
+        }
+        setPaper(papers.find((item) => item.id === paperId));
+    }, [papers, paperId]);
+
+
+    useEffect(() => {
+        if (!paperId) return;
+        syncPaperById(paperId)
+            .then((synced) => setPaper(synced))
+            .catch((error) => {
+                console.error("Failed to sync paper:", error);
+            });
+    }, [paperId]);
     const router = useRouter();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");

@@ -28,17 +28,22 @@ export default function NewQuestionDialog({ paperId }: NewQuestionDialogProps) {
         setIsDialogOpen(false);
     };
 
-    const handleAddQuestion = () => {
+    const handleAddQuestion = async () => {
         const trimmedPrompt = questionPrompt.trim();
         if (!trimmedPrompt) {
             setDialogError("请填写题目内容");
             return;
         }
-        addQuestion(paperId, {
-            type: questionType,
-            prompt: trimmedPrompt,
-        });
-        setIsDialogOpen(false);
+        try {
+            await addQuestion(paperId, {
+                type: questionType,
+                prompt: trimmedPrompt,
+            });
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to add question:", error);
+            setDialogError("添加题目失败，请检查登录状态或稍后重试");
+        }
     };
 
     const handleQuestionTypeChange = (value: QuestionType) => {

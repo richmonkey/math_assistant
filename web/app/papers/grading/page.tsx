@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { usePapers } from "../../papers-context";
+import { GradingResult, usePapers } from "../../papers-context";
 import AutoLatex from "../../components/AutoLatex";
 import { QuestionData, QuestionGradingResult, gradeQuestion, generateOverallComment } from "../../lib/grading";
 
@@ -14,10 +14,7 @@ const questionTypeLabels: Record<string, string> = {
     essay: "解答题",
 };
 
-export type PaperGradingResult = {
-    totalScore: number;
-    maxTotalScore: number;
-    overallComment: string;
+type ComputedPaperGradingResult = GradingResult & {
     questionResults: QuestionGradingResult[];
 };
 
@@ -28,19 +25,9 @@ function GradingPageContent() {
     const { getPaperById, saveGradingResult } = usePapers();
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
 
-    const [paperGradingResult, setPaperGradingResult] = useState<PaperGradingResult>({ totalScore: 0, maxTotalScore: 0, overallComment: "", questionResults: [] });
+    const [paperGradingResult, setPaperGradingResult] = useState<GradingResult>({ totalScore: 0, maxTotalScore: 0, overallComment: "" });
     const [isGrading, setIsGrading] = useState(false);
     const [currentGradingIndex, setCurrentGradingIndex] = useState(-1);
-
-    const gradingResults = paperGradingResult.questionResults.map((result) => {
-        return {
-            questionId: result.questionId,
-            score: result.score,
-            maxScore: result.maxScore,
-            comment: result.comment,
-            isCorrect: result.isCorrect,
-        };
-    });
 
     const totalScore = paperGradingResult.totalScore;
     const maxTotalScore = paperGradingResult.maxTotalScore;
@@ -55,7 +42,7 @@ function GradingPageContent() {
     async function gradePaper(
         questions: QuestionData[],
         maxScorePerQuestion: number = 10
-    ): Promise<PaperGradingResult> {
+    ): Promise<ComputedPaperGradingResult> {
         // 步骤1：批改每道题
         const questionResults: QuestionGradingResult[] = [];
 
@@ -97,18 +84,27 @@ function GradingPageContent() {
         setIsGrading(true);
         setCurrentGradingIndex(0);
 
-        const result = await gradePaper(paper.questions.map(q => ({
-            id: q.id,
-            type: questionTypeLabels[q.type] ?? "未知题型",
-            prompt: q.prompt,
-            answer: q.answer,
-        })));
+        try {
+            const result = await gradePaper(paper.questions.map(q => ({
+                id: q.id,
+                type: questionTypeLabels[q.type] ?? "未知题型",
+                prompt: q.prompt,
+                answer: q.answer,
+            })));
 
-        setPaperGradingResult(result);
-        // 保存阅卷结果到 papers context
-        saveGradingResult(paperId, result);
-        setIsGrading(false);
-        setCurrentGradingIndex(-1);
+            setPaperGradingResult({
+                totalScore: result.totalScore,
+                maxTotalScore: result.maxTotalScore,
+                overallComment: result.overallComment,
+            });
+            // 保存阅卷结果到 papers context
+            await saveGradingResult(paperId, result);
+        } catch (error) {
+            console.error("Failed to grade paper:", error);
+        } finally {
+            setIsGrading(false);
+            setCurrentGradingIndex(-1);
+        }
     };
 
     useEffect(() => {
@@ -117,7 +113,7 @@ function GradingPageContent() {
         }
 
         // 如果已经有阅卷结果，且题目数量一致，直接使用
-        if (paper.gradingResult && paper.gradingResult.questionResults.length === paper.questions.length) {
+        if (paper.gradingResult && paper.questions.every((question) => question.gradingResult)) {
             setPaperGradingResult(paper.gradingResult);
             return;
         }
@@ -236,7 +232,7 @@ function GradingPageContent() {
                             ) : (
                                 <ul className="space-y-4">
                                     {paper.questions.map((question, index) => {
-                                        const result = gradingResults.find(r => r.questionId === question.id);
+                                        const result = question.gradingResult;
                                         if (!result) return null;
 
                                         return (

@@ -5,6 +5,7 @@ import { ThemeProvider } from "./theme-context";
 import { PapersProvider } from "./papers-context";
 import { ToastProvider } from "./toast-context";
 import OllamaInitializer from "./components/OllamaInitializer";
+import AuthGate from "./components/AuthGate";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -40,7 +41,9 @@ export default function RootLayout({
                     <ThemeProvider>
                         <PapersProvider>
                             <ToastProvider>
-                                <OllamaInitializer>{children}</OllamaInitializer>
+                                <AuthGate>
+                                    <OllamaInitializer>{children}</OllamaInitializer>
+                                </AuthGate>
                             </ToastProvider>
                         </PapersProvider>
                     </ThemeProvider>

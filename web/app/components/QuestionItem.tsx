@@ -95,7 +95,12 @@ export default function QuestionItem({
                         icon="pi pi-trash"
                         severity="danger"
                         outlined
-                        onClick={() => deleteQuestion(paperId, question.id)}
+                        onClick={() => {
+                            deleteQuestion(paperId, question.id).catch((error) => {
+                                console.error("Failed to delete question:", error);
+                                showError("删除题目失败，请稍后重试。", "错误");
+                            });
+                        }}
                     />
                 </div>
             </div>

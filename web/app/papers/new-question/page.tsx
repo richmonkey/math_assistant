@@ -21,18 +21,23 @@ function NewQuestionPageContent() {
         router.push(`/papers?paperId=${encodeURIComponent(paperId)}`);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const trimmedPrompt = questionPrompt.trim();
         if (!trimmedPrompt) {
             setError("请填写题目内容");
             return;
         }
 
-        addQuestion(paperId, {
-            type: questionType,
-            prompt: trimmedPrompt,
-        });
-        returnToPaperDetail();
+        try {
+            await addQuestion(paperId, {
+                type: questionType,
+                prompt: trimmedPrompt,
+            });
+            returnToPaperDetail();
+        } catch (error) {
+            console.error("Failed to add question:", error);
+            setError("添加题目失败，请检查登录状态或稍后重试");
+        }
     };
 
     if (!paper) {

@@ -1,19 +1,40 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createPaper,
+    createQuestion,
+    deleteQuestionApi,
+    getPaperDetail,
+    listPapers,
+    type ServerPaperDetailResponse,
+    type ServerPaperGradingResultResponse,
+    type ServerPaperResponse,
+    type ServerQuestionGradingResultResponse,
+    type ServerQuestionResponse,
+    updateQuestionApi,
+    uploadPaperGradingResult,
+    uploadQuestionGradingResult,
+} from "./lib/papers-api";
+import { hasValidSession } from "./lib/auth";
 
 type GradingResult = {
     totalScore: number;
     maxTotalScore: number;
     overallComment: string;
-    questionResults: {
-        questionId: string;
-        score: number;
-        maxScore: number;
-        comment: string;
-        isCorrect: boolean;
+};
 
-    }[];
+type QuestionGradingResult = {
+    score: number;
+    maxScore: number;
+    comment: string;
+    isCorrect: boolean;
+};
+
+type SaveGradingResultInput = GradingResult & {
+    questionResults: Array<{
+        questionId: string;
+    } & QuestionGradingResult>;
 };
 
 type Paper = {
@@ -33,6 +54,7 @@ type Question = {
     prompt: string;
     answer: string;
     noteId?: string;
+    gradingResult?: QuestionGradingResult;
 };
 
 type PaperInput = {
@@ -44,80 +66,139 @@ type PaperUpdate = Partial<Omit<Paper, "id">>;
 
 type PapersContextValue = {
     papers: Paper[];
-    addPaper: (input: PaperInput) => Paper;
-    updatePaper: (id: string, update: PaperUpdate) => void;
-    addQuestion: (paperId: string, input: QuestionInput) => void;
-    updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => void;
+    syncPapersFromServer: () => Promise<void>;
+    addPaper: (input: PaperInput) => Promise<Paper>;
+    updatePaper: (id: string, update: PaperUpdate) => Promise<void>;
+    addQuestion: (paperId: string, input: QuestionInput) => Promise<Question>;
+    updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => Promise<void>;
     updateQuestionNoteId: (paperId: string, questionId: string, noteId: string) => void;
-    deleteQuestion: (paperId: string, questionId: string) => void;
+    deleteQuestion: (paperId: string, questionId: string) => Promise<void>;
     getPaperById: (id: string) => Paper | undefined;
-    addQuestionsFromImport: (paperId: string, inputs: ImportQuestionInput[]) => void;
-    saveGradingResult: (paperId: string, result: GradingResult) => void;
+    syncPaperById: (id: string) => Promise<Paper>;
+    addQuestionsFromImport: (paperId: string, inputs: ImportQuestionInput[]) => Promise<boolean>;
+    saveGradingResult: (paperId: string, result: SaveGradingResultInput) => Promise<void>;
 };
 
-const defaultPapers: Paper[] = [
-    {
-        id: "paper-1",
-        title: "高等数学期中试卷",
-        description: "重点覆盖极限与导数",
-        updatedAt: new Date().toISOString(),
-        questions: [
-            {
-                id: "q-1",
-                type: "single",
-                prompt: "已知函数 f(x)=x^2-1，则 f(2) 等于多少？",
-                answer: "3",
-            },
-            {
-                id: "q-2",
-                type: "blank",
-                prompt: "求极限：lim_{x→0} (sin x)/x = ____。",
-                answer: "1",
-            },
-        ],
-    },
-    {
-        id: "paper-2",
-        title: "线性代数练习卷",
-        description: "矩阵运算与特征值专题",
-        updatedAt: new Date().toISOString(),
-        questions: [
-            {
-                id: "q-3",
-                type: "multiple",
-                prompt: "下列哪些矩阵是对称矩阵？",
-                answer: "A,C",
-            },
-            {
-                id: "q-4",
-                type: "essay",
-                prompt: "简述特征值的几何意义。",
-                answer: "特征值表示线性变换在特征向量方向上的伸缩倍数。",
-            },
-        ],
-    },
-];
+const defaultPapers: Paper[] = [];
 
 const storageKey = "papers";
 
 const PapersContext = createContext<PapersContextValue | null>(null);
 
-export function PapersProvider({ children }: { children: React.ReactNode }) {
-    const [papers, setPapers] = useState<Paper[]>(defaultPapers);
+function mapServerQuestion(question: ServerQuestionResponse): Question {
+    return {
+        id: question.id,
+        type: question.type,
+        prompt: question.prompt,
+        answer: question.answer,
+    };
+}
 
-    useEffect(() => {
+function mapServerQuestionGradingResult(
+    result: ServerQuestionGradingResultResponse
+): QuestionGradingResult {
+    return {
+        score: result.score,
+        maxScore: result.max_score,
+        comment: result.comment,
+        isCorrect: result.is_correct,
+    };
+}
+
+function mapServerPaperGradingResult(
+    result: ServerPaperGradingResultResponse
+): GradingResult {
+    return {
+        totalScore: result.score,
+        maxTotalScore: result.max_score,
+        overallComment: result.comment,
+    };
+}
+
+function mapServerPaperDetail(detail: ServerPaperDetailResponse): Paper {
+    return {
+        id: detail.id,
+        title: detail.title,
+        description: detail.description ?? "",
+        updatedAt: detail.updated_at,
+        gradingResult: detail.grading_result
+            ? mapServerPaperGradingResult(detail.grading_result)
+            : undefined,
+        questions: detail.questions.map((question) => ({
+            ...mapServerQuestion(question),
+            gradingResult: question.grading_result
+                ? mapServerQuestionGradingResult(question.grading_result)
+                : undefined,
+        })),
+    };
+}
+
+function mapServerPaper(paper: ServerPaperResponse): Paper {
+    return {
+        id: paper.id,
+        title: paper.title,
+        description: paper.description ?? "",
+        updatedAt: paper.updated_at,
+        questions: [],
+    };
+}
+
+export function PapersProvider({ children }: { children: React.ReactNode }) {
+    const [papers, setPapers] = useState<Paper[]>(() => {
+        if (typeof window === "undefined") {
+            return defaultPapers;
+        }
+
         const stored = window.localStorage.getItem(storageKey);
         if (!stored) {
-            return;
+            return defaultPapers;
         }
 
         try {
             const parsed = JSON.parse(stored) as Paper[];
             if (Array.isArray(parsed) && parsed.length > 0) {
-                setPapers(parsed);
+                return parsed;
             }
         } catch {
-            setPapers(defaultPapers);
+            // Ignore parse failures and fallback to defaults.
+        }
+
+        return defaultPapers;
+    });
+
+    const syncPapersFromServer = useCallback(async () => {
+        if (!hasValidSession()) {
+            return;
+        }
+
+        try {
+            const summaries = await listPapers();
+            const remoteIds = new Set(summaries.map((s) => s.id));
+
+            setPapers((current) => {
+                const localById = new Map(current.map((p) => [p.id, p]));
+
+                // Build updated list: keep local papers that exist on server,
+                // update their summary fields, and append new ones from server.
+                const updated: Paper[] = summaries.map((summary) => {
+                    const local = localById.get(summary.id);
+                    if (local) {
+                        // Update summary fields from server, preserve local-only fields
+                        return {
+                            ...local,
+                            title: summary.title,
+                            description: summary.description ?? "",
+                            updatedAt: summary.updated_at,
+                        };
+                    }
+                    return mapServerPaper(summary);
+                });
+
+                // Remove papers that no longer exist on server
+                return updated.filter((p) => remoteIds.has(p.id));
+            });
+        } catch (error) {
+            console.error("Failed to sync papers from server:", error);
         }
     }, []);
 
@@ -125,19 +206,22 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(storageKey, JSON.stringify(papers));
     }, [papers]);
 
-    const addPaper = (input: PaperInput) => {
-        const newPaper: Paper = {
-            id: `paper-${Date.now()}`,
-            title: input.title,
-            description: input.description ?? "",
-            updatedAt: new Date().toISOString(),
-            questions: [],
-        };
-        setPapers((current) => [newPaper, ...current]);
-        return newPaper;
+    const addPaper = async (input: PaperInput) => {
+        try {
+            const created = await createPaper({
+                title: input.title,
+                description: input.description || null,
+            });
+            const serverPaper = mapServerPaper(created);
+            setPapers((current) => [serverPaper, ...current]);
+            return serverPaper;
+        } catch (error) {
+            console.error("Failed to create paper:", error);
+            throw error;
+        }
     };
 
-    const updatePaper = (id: string, update: PaperUpdate) => {
+    const updatePaper = async (id: string, update: PaperUpdate) => {
         setPapers((current) =>
             current.map((paper) =>
                 paper.id === id
@@ -151,27 +235,41 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
-    const addQuestion = (paperId: string, input: QuestionInput) => {
-        const newQuestion: Question = {
-            id: `q-${Date.now()}`,
-            type: input.type,
-            prompt: input.prompt,
-            answer: input.answer ?? "",
-        };
-        setPapers((current) =>
-            current.map((paper) =>
-                paper.id === paperId
-                    ? {
-                        ...paper,
-                        questions: [newQuestion, ...paper.questions],
-                        updatedAt: new Date().toISOString(),
-                    }
-                    : paper
-            )
-        );
+    const addQuestion = async (paperId: string, input: QuestionInput) => {
+        try {
+            const created = await createQuestion({
+                paperId,
+                type: input.type,
+                prompt: input.prompt,
+                answer: input.answer ?? "",
+            });
+            const serverQuestion = mapServerQuestion(created);
+            setPapers((current) =>
+                current.map((paper) =>
+                    paper.id === paperId
+                        ? {
+                            ...paper,
+                            questions: [serverQuestion, ...paper.questions],
+                            updatedAt: new Date().toISOString(),
+                        }
+                        : paper
+                )
+            );
+            return serverQuestion;
+        } catch (error) {
+            console.error("Failed to create question:", error);
+            throw error;
+        }
     };
 
-    const updateQuestion = (paperId: string, questionId: string, update: QuestionInput) => {
+    const updateQuestion = async (paperId: string, questionId: string, update: QuestionInput) => {
+        await updateQuestionApi({
+            questionId,
+            type: update.type,
+            prompt: update.prompt,
+            answer: update.answer ?? "",
+        });
+
         setPapers((current) =>
             current.map((paper) =>
                 paper.id === paperId
@@ -212,7 +310,8 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
-    const deleteQuestion = (paperId: string, questionId: string) => {
+    const deleteQuestion = async (paperId: string, questionId: string) => {
+        await deleteQuestionApi(questionId);
         setPapers((current) =>
             current.map((paper) =>
                 paper.id === paperId
@@ -230,13 +329,88 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
 
     const getPaperById = (id: string) => papers.find((paper) => paper.id === id);
 
-    const saveGradingResult = (paperId: string, result: GradingResult) => {
+    const syncPaperById = async (id: string): Promise<Paper> => {
+        const detail = await getPaperDetail(id);
+        const remotePaper = mapServerPaperDetail(detail);
+        let mergedPaper = remotePaper;
+        setPapers((current) => {
+            const exists = current.some((p) => p.id === id);
+            if (exists) {
+                return current.map((p) => {
+                    if (p.id !== id) return p;
+                    mergedPaper = {
+                        ...remotePaper,
+                        // preserve local-only question fields (e.g. noteId)
+                        questions: remotePaper.questions.map((rq) => {
+                            const local = p.questions.find((lq) => lq.id === rq.id);
+                            return local ? { ...rq, noteId: local.noteId } : rq;
+                        }),
+                    };
+                    return mergedPaper;
+                });
+            }
+            return [remotePaper, ...current];
+        });
+        return mergedPaper;
+    };
+
+    const saveGradingResult = async (paperId: string, result: SaveGradingResultInput) => {
+        const questionResultById = new Map(
+            result.questionResults.map((item) => [item.questionId, item])
+        );
+        const paperGradingResult: GradingResult = {
+            totalScore: result.totalScore,
+            maxTotalScore: result.maxTotalScore,
+            overallComment: result.overallComment,
+        };
+
+        try {
+            const questionUploads = result.questionResults
+                .map((item) =>
+                    uploadQuestionGradingResult({
+                        questionId: item.questionId,
+                        comment: item.comment,
+                        score: item.score,
+                        maxScore: item.maxScore,
+                        isCorrect: item.isCorrect,
+                    })
+                );
+
+            await Promise.all(questionUploads);
+
+            await uploadPaperGradingResult({
+                paperId,
+                comment: result.overallComment,
+                score: result.totalScore,
+                maxScore: result.maxTotalScore,
+            });
+        } catch (error) {
+            console.error("Failed to upload grading results:", error);
+            throw error;
+        }
+
         setPapers((current) =>
             current.map((paper) =>
                 paper.id === paperId
                     ? {
                         ...paper,
-                        gradingResult: result,
+                        gradingResult: paperGradingResult,
+                        questions: paper.questions.map((question) => {
+                            const questionResult = questionResultById.get(question.id);
+                            if (!questionResult) {
+                                return question;
+                            }
+
+                            return {
+                                ...question,
+                                gradingResult: {
+                                    score: questionResult.score,
+                                    maxScore: questionResult.maxScore,
+                                    comment: questionResult.comment,
+                                    isCorrect: questionResult.isCorrect,
+                                },
+                            };
+                        }),
                         updatedAt: new Date().toISOString(),
                     }
                     : paper
@@ -244,41 +418,59 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
-    const addQuestionsFromImport = (paperId: string, inputs: ImportQuestionInput[]) => {
-        const newQuestions: Question[] = inputs.map((input, index) => ({
-            id: `q-${Date.now()}-${index}`,
-            type: input.type,
-            prompt: input.prompt,
-            answer: input.answer ?? "",
-        }));
-        setPapers((current) =>
-            current.map((paper) =>
-                paper.id === paperId
-                    ? {
-                        ...paper,
-                        questions: [...newQuestions, ...paper.questions],
-                        updatedAt: new Date().toISOString(),
-                    }
-                    : paper
-            )
-        );
+    const addQuestionsFromImport = async (paperId: string, inputs: ImportQuestionInput[]) => {
+        if (inputs.length === 0) {
+            return false;
+        }
+
+        try {
+            const createdQuestions = await Promise.all(
+                inputs.map((input) =>
+                    createQuestion({
+                        paperId,
+                        type: input.type,
+                        prompt: input.prompt,
+                        answer: input.answer ?? "",
+                    })
+                )
+            );
+
+            const mappedQuestions = createdQuestions.map((question) =>
+                mapServerQuestion(question)
+            );
+
+            setPapers((current) =>
+                current.map((paper) =>
+                    paper.id === paperId
+                        ? {
+                            ...paper,
+                            questions: [...mappedQuestions, ...paper.questions],
+                            updatedAt: new Date().toISOString(),
+                        }
+                        : paper
+                )
+            );
+            return true;
+        } catch (error) {
+            console.error("Failed to import questions:", error);
+            return false;
+        }
     };
 
-    const value = useMemo(
-        () => ({
-            papers,
-            addPaper,
-            updatePaper,
-            addQuestion,
-            updateQuestion,
-            updateQuestionNoteId,
-            deleteQuestion,
-            getPaperById,
-            addQuestionsFromImport,
-            saveGradingResult,
-        }),
-        [papers]
-    );
+    const value: PapersContextValue = {
+        papers,
+        syncPapersFromServer,
+        addPaper,
+        updatePaper,
+        addQuestion,
+        updateQuestion,
+        updateQuestionNoteId,
+        deleteQuestion,
+        getPaperById,
+        syncPaperById,
+        addQuestionsFromImport,
+        saveGradingResult,
+    };
 
     return <PapersContext.Provider value={value}>{children}</PapersContext.Provider>;
 }
@@ -303,4 +495,11 @@ type ImportQuestionInput = {
     answer?: string;
 };
 
-export type { Paper, Question, QuestionType, ImportQuestionInput, GradingResult };
+export type {
+    Paper,
+    Question,
+    QuestionType,
+    ImportQuestionInput,
+    GradingResult,
+    QuestionGradingResult,
+};

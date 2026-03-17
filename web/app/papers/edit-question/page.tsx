@@ -22,17 +22,22 @@ function EditQuestionPageContent() {
     const [questionPrompt, setQuestionPrompt] = useState(question?.prompt ?? "");
     const [error, setError] = useState("");
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const trimmedPrompt = questionPrompt.trim();
         if (!trimmedPrompt) {
             setError("请填写题目内容");
             return;
         }
-        updateQuestion(paperId, questionId, {
-            type: questionType,
-            prompt: trimmedPrompt,
-        });
-        router.back();
+        try {
+            await updateQuestion(paperId, questionId, {
+                type: questionType,
+                prompt: trimmedPrompt,
+            });
+            router.back();
+        } catch (err) {
+            console.error("Failed to update question:", err);
+            setError("保存失败，请检查登录状态或稍后重试");
+        }
     };
 
     if (!question) {
