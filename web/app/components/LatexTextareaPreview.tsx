@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputTextarea } from "primereact/inputtextarea";
+import { useToast } from "../toast-context";
 import { AutoCodeLatex } from "./AutoLatex";
 import MathEditor from "./MathEditor";
+import OcrPreviewModal from "./OcrPreviewModal";
 
 type LatexTextareaPreviewProps = {
     value: string;
@@ -13,6 +15,8 @@ type LatexTextareaPreviewProps = {
     rows?: number;
     className?: string;
     placeholder?: string;
+    performOcr?: (file: File) => Promise<string>;
+    showOcrButton?: boolean;
 };
 
 const SYMBOL_OPTIONS = [
@@ -94,9 +98,17 @@ export default function LatexTextareaPreview({
     rows = 3,
     className,
     placeholder,
+    performOcr,
+    showOcrButton = true,
 }: LatexTextareaPreviewProps) {
     const [formulaDialogVisible, setFormulaDialogVisible] = useState(false);
     const [formulaLatex, setFormulaLatex] = useState("x^2");
+    const ocrInputRef = useRef<HTMLInputElement>(null);
+    const [isOcring, setIsOcring] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [pendingOcrFile, setPendingOcrFile] = useState<File | null>(null);
+    const { showError } = useToast();
 
     const containerRef = useRef<HTMLDivElement>(null);
     const undoStackRef = useRef<string[]>([]);
@@ -177,8 +189,82 @@ export default function LatexTextareaPreview({
         syncHistoryButtons();
     }, [syncHistoryButtons]);
 
+    const clearPreviewState = useCallback(() => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
+        setPendingOcrFile(null);
+        setIsPreviewOpen(false);
+    }, [previewUrl]);
+
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+    const handleOcrClick = useCallback(() => {
+        if (isOcring) {
+            return;
+        }
+        ocrInputRef.current?.click();
+    }, [isOcring]);
+
+    const handleOcrChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files?.length) {
+            return;
+        }
+
+        const file = event.target.files[0];
+        event.target.value = "";
+
+        if (!file) {
+            return;
+        }
+
+        const nextUrl = URL.createObjectURL(file);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(nextUrl);
+        setPendingOcrFile(file);
+        setIsPreviewOpen(true);
+    }, [previewUrl]);
+
+    const handlePreviewConfirm = useCallback(async (croppedFile: File | null) => {
+        if (!pendingOcrFile) {
+            return;
+        }
+
+        try {
+            setIsOcring(true);
+            const fileForOcr = croppedFile ?? pendingOcrFile;
+            if (performOcr) {
+                const ocrText = await performOcr(fileForOcr);
+                const nextValue = value.trim() ? `${value}\n${ocrText}` : ocrText;
+                applyValue(nextValue);
+            }
+            clearPreviewState();
+        } catch (error) {
+            console.error("OCR failed:", error);
+            showError("请确保上传的是清晰的图片，并且只包含打印内容。", "OCR 失败");
+        } finally {
+            setIsOcring(false);
+        }
+    }, [applyValue, clearPreviewState, pendingOcrFile, showError, value]);
+
     return (
         <div className={`flex-1 ${className ?? ""}`} ref={containerRef}>
+            <OcrPreviewModal
+                isOpen={isPreviewOpen}
+                previewUrl={previewUrl}
+                isOcring={isOcring}
+                onCancel={clearPreviewState}
+                onConfirm={handlePreviewConfirm}
+            />
             <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Button
                     type="button"
@@ -240,7 +326,7 @@ export default function LatexTextareaPreview({
                 rows={rows}
                 placeholder={placeholder}
             />
-            <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex justify-end gap-2">
                 <Button
                     type="button"
                     label="插入公式"
@@ -249,6 +335,27 @@ export default function LatexTextareaPreview({
                     size="small"
                     onClick={() => { setFormulaLatex("x^2"); setFormulaDialogVisible(true); }}
                 />
+                {showOcrButton && (
+                    <>
+                        <Button
+                            type="button"
+                            label="OCR"
+                            icon="pi pi-image"
+                            outlined
+                            size="small"
+                            onClick={handleOcrClick}
+                            disabled={isOcring}
+                            aria-label="OCR 识别并插入"
+                        />
+                        <input
+                            ref={ocrInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleOcrChange}
+                        />
+                    </>
+                )}
             </div>
             <div className="mt-2 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
                 <p className="mb-2 text-xs text-[var(--muted)]">LaTeX 预览</p>

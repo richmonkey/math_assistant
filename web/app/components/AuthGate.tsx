@@ -9,12 +9,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const isLoginPage = pathname === "/login";
     const [isHydrated, setIsHydrated] = useState(false);
-    const [hasSession, setHasSession] = useState(false);
 
     useEffect(() => {
-        setHasSession(hasValidSession());
         setIsHydrated(true);
     }, []);
+
+    // Re-evaluate session status on each render after hydration so route guards
+    // react immediately to in-tab login/logout updates.
+    const hasSession = isHydrated && hasValidSession();
 
     const shouldRedirectToLogin = isHydrated && !hasSession && !isLoginPage;
     const shouldRedirectToHome = isHydrated && hasSession && isLoginPage;

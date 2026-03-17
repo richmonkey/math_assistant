@@ -1,13 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { QuestionType } from "../papers-context";
-import { useToast } from "../toast-context";
-import { performAnswerOcr } from "../lib/ocr";
-import OcrPreviewModal from "./OcrPreviewModal";
 import LatexTextareaPreview from "./LatexTextareaPreview";
+import { performAnswerOcr } from "../lib/ocr";
 
 const blankDelimiter = " | ";
 const choiceDelimiter = ",";
@@ -254,76 +252,8 @@ export default function QuestionAnswerFields({
     onAddChoiceAnswer,
     onRemoveChoiceAnswer,
 }: QuestionAnswerFieldsProps) {
-    const ocrInputRef = useRef<HTMLInputElement>(null);
-    const [isOcring, setIsOcring] = useState(false);
-    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [pendingOcrFile, setPendingOcrFile] = useState<File | null>(null);
-    const { showError } = useToast();
-
-    const clearPreviewState = () => {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-        setPreviewUrl(null);
-        setPendingOcrFile(null);
-        setIsPreviewOpen(false);
-    };
-
-    const handleOcrClick = () => {
-        if (isOcring) {
-            return;
-        }
-        ocrInputRef.current?.click();
-    };
-
-    const handleOcrChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files?.length) {
-            return;
-        }
-
-        const file = event.target.files[0];
-        event.target.value = "";
-
-        if (!file) {
-            return;
-        }
-        const nextUrl = URL.createObjectURL(file);
-        setPreviewUrl(nextUrl);
-        setPendingOcrFile(file);
-        setIsPreviewOpen(true);
-    };
-
-    const handlePreviewConfirm = async (croppedFile: File | null) => {
-        if (!pendingOcrFile) {
-            return;
-        }
-        try {
-            setIsOcring(true);
-            const fileForOcr = croppedFile ?? pendingOcrFile;
-            const ocrText = await performAnswerOcr(fileForOcr);
-            const nextValue = questionAnswer.trim()
-                ? `${questionAnswer}\n${ocrText}`
-                : ocrText;
-            onQuestionAnswerChange(nextValue);
-            clearPreviewState();
-        } catch (error) {
-            console.error("OCR failed:", error);
-            showError("请确保上传的是清晰的图片，并且只包含打印内容。", "OCR 失败");
-        } finally {
-            setIsOcring(false);
-        }
-    };
-
     return (
         <div>
-            <OcrPreviewModal
-                isOpen={isPreviewOpen}
-                previewUrl={previewUrl}
-                isOcring={isOcring}
-                onCancel={clearPreviewState}
-                onConfirm={handlePreviewConfirm}
-            />
             <label className="mb-2 block text-sm text-[var(--foreground)]">答案</label>
             {questionType === "blank" ? (
                 <div className="flex flex-col gap-3">
@@ -395,30 +325,12 @@ export default function QuestionAnswerFields({
                     />
                 </div>
             ) : questionType === "essay" ? (
-                <div className="flex items-start gap-2">
-                    <LatexTextareaPreview
-                        value={questionAnswer}
-                        onChange={onQuestionAnswerChange}
-                        rows={3}
-                    />
-                    <div className="flex flex-col">
-                        <Button
-                            label="+"
-                            outlined
-                            severity="secondary"
-                            onClick={handleOcrClick}
-                            disabled={isOcring}
-                            aria-label="OCR 识别并插入"
-                        />
-                        <input
-                            ref={ocrInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleOcrChange}
-                        />
-                    </div>
-                </div>
+                <LatexTextareaPreview
+                    value={questionAnswer}
+                    onChange={onQuestionAnswerChange}
+                    performOcr={performAnswerOcr}
+                    rows={8}
+                />
             ) : questionType === "single" ? (
                 <div className="flex flex-col gap-2">
                     <select
