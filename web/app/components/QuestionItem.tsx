@@ -1,9 +1,8 @@
 "use client";
 
 import { Button } from "primereact/button";
+import { useRouter } from "next/navigation";
 import { Question, usePapers } from "../papers-context";
-import EditQuestionDialog from "./EditQuestionDialog";
-import EditAnswerDialog from "./EditAnswerDialog";
 import AutoLatex from "./AutoLatex";
 import { useToast } from "../toast-context";
 
@@ -32,6 +31,7 @@ export default function QuestionItem({
     const hasNotesAPI = typeof window !== 'undefined' && window.notesAPI !== undefined;
     const { updateQuestionNoteId, deleteQuestion } = usePapers();
     const { showError, showMessage } = useToast();
+    const router = useRouter();
 
     const handleCreateNote = async () => {
         if (!window.notesAPI) {
@@ -78,8 +78,18 @@ export default function QuestionItem({
                             onClick={handleCreateNote}
                         />
                     )}
-                    <EditAnswerDialog paperId={paperId} question={question} />
-                    <EditQuestionDialog paperId={paperId} question={question} />
+                    <Button
+                        label="答案"
+                        icon="pi pi-file-edit"
+                        outlined
+                        onClick={() => router.push(`/papers/edit-answer?paperId=${paperId}&questionId=${question.id}`)}
+                    />
+                    <Button
+                        label="编辑"
+                        icon="pi pi-pencil"
+                        outlined
+                        onClick={() => router.push(`/papers/edit-question?paperId=${paperId}&questionId=${question.id}`)}
+                    />
                     <Button
                         label="删除"
                         icon="pi pi-trash"

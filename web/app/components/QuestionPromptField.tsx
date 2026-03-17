@@ -16,7 +16,7 @@ type QuestionPromptFieldProps = {
 export default function QuestionPromptField({
     value,
     onChange,
-    isDialogOpen,
+
 }: QuestionPromptFieldProps) {
     const { showError } = useToast();
     const ocrInputRef = useRef<HTMLInputElement>(null);
@@ -34,11 +34,7 @@ export default function QuestionPromptField({
         setIsPreviewOpen(false);
     };
 
-    useEffect(() => {
-        if (!isDialogOpen) {
-            clearPreviewState();
-        }
-    }, [isDialogOpen]);
+
 
     useEffect(() => {
         return () => {

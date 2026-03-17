@@ -4,9 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
 import AutoLatex from "../../components/AutoLatex";
 import { useToast } from "../../toast-context";
 import { usePapers, type QuestionType } from "../../papers-context";
@@ -58,11 +55,6 @@ function ImportPreviewPageContent() {
     const { showError } = useToast();
     const { addQuestionsFromImport } = usePapers();
     const [questions, setQuestions] = useState<ImportQuestion[]>([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingQuestion, setEditingQuestion] = useState<ImportQuestion | null>(null);
-    const [draftNumber, setDraftNumber] = useState("");
-    const [draftType, setDraftType] = useState<ImportQuestionType>("unknown");
-    const [draftContent, setDraftContent] = useState("");
 
     const mapImportType = (importType: ImportQuestionType): QuestionType => {
         switch (importType) {
@@ -125,37 +117,12 @@ function ImportPreviewPageContent() {
         }
     }, [storageKey, showError]);
 
-    const openEditDialog = (question: ImportQuestion) => {
-        setEditingQuestion(question);
-        setDraftNumber(question.number);
-        setDraftType(question.type);
-        setDraftContent(question.content);
-        setIsDialogOpen(true);
-    };
-
-    const closeDialog = () => {
-        setIsDialogOpen(false);
-        setEditingQuestion(null);
-    };
-
-    const handleSaveEdit = () => {
-        if (!editingQuestion) {
-            return;
-        }
-
-        setQuestions((current) =>
-            current.map((item) =>
-                item.id === editingQuestion.id
-                    ? {
-                        ...item,
-                        number: draftNumber.trim() || item.number,
-                        type: draftType,
-                        content: draftContent.trim(),
-                    }
-                    : item
-            )
+    const openEditPage = (question: ImportQuestion) => {
+        // Persist current state (with ids) so the edit page can read/update it
+        sessionStorage.setItem(storageKey, JSON.stringify({ questions }));
+        router.push(
+            `/papers/import-preview/edit-question?paperId=${encodeURIComponent(paperId)}&questionId=${encodeURIComponent(question.id)}`
         );
-        closeDialog();
     };
 
     const handleDeleteQuestion = (id: string) => {
@@ -216,7 +183,7 @@ function ImportPreviewPageContent() {
                                             label="编辑"
                                             icon="pi pi-pencil"
                                             outlined
-                                            onClick={() => openEditDialog(question)}
+                                            onClick={() => openEditPage(question)}
                                         />
                                         <Button
                                             label="删除"
@@ -232,58 +199,6 @@ function ImportPreviewPageContent() {
                     </ul>
                 </section>
             )}
-
-            <Dialog
-                header="编辑题目"
-                visible={isDialogOpen}
-                onHide={closeDialog}
-                className="w-full max-w-2xl"
-            >
-                <div className="flex flex-col gap-4 p-4">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="mb-2 block text-sm text-[var(--foreground)]">题号</label>
-                            <InputText
-                                value={draftNumber}
-                                onChange={(event) => setDraftNumber(event.target.value)}
-                                className="w-full"
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-2 block text-sm text-[var(--foreground)]">题型</label>
-                            <select
-                                value={draftType}
-                                onChange={(event) =>
-                                    setDraftType(event.target.value as ImportQuestionType)
-                                }
-                                className="w-full rounded border border-[var(--surface-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                            >
-                                <option value="multiple_choice">选择题</option>
-                                <option value="fill_blank">填空题</option>
-                                <option value="calculation">计算题</option>
-                                <option value="proof">证明题</option>
-                                <option value="unknown">未知类型</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="mb-2 block text-sm text-[var(--foreground)]">题干</label>
-                        <InputTextarea
-                            value={draftContent}
-                            onChange={(event) => setDraftContent(event.target.value)}
-                            className="w-full"
-                            rows={6}
-                        />
-                    </div>
-                    <div>
-                        <p className="text-sm text-[var(--muted)]">选择题选项不可编辑。</p>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button label="取消" severity="secondary" outlined onClick={closeDialog} />
-                        <Button label="保存" icon="pi pi-check" onClick={handleSaveEdit} />
-                    </div>
-                </div>
-            </Dialog>
         </main>
     );
 }

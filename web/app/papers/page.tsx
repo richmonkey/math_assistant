@@ -8,7 +8,6 @@ import { ProgressSpinner } from "primereact/progressspinner";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { usePapers } from "../papers-context";
-import NewQuestionDialog from "../components/NewQuestionDialog";
 import QuestionItem from "../components/QuestionItem";
 import { useToast } from "../toast-context";
 import { load_paper_image } from "../lib/ocr";
@@ -181,7 +180,9 @@ function PaperDetailPageContent() {
                                     outlined
                                     onClick={handleImportClick}
                                 />
-                                <NewQuestionDialog paperId={paper.id} />
+                                <Link href={`/papers/new-question?paperId=${encodeURIComponent(paper.id)}`}>
+                                    <Button label="添加题目" icon="pi pi-plus" />
+                                </Link>
                                 <Link href={`/papers/grading?paperId=${encodeURIComponent(paperId)}`}>
                                     <Button
                                         label="阅卷"
