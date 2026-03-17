@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
 import { InputTextarea } from "primereact/inputtextarea";
 import { AutoCodeLatex } from "./AutoLatex";
+import MathEditor from "./MathEditor";
 
 type LatexTextareaPreviewProps = {
     value: string;
@@ -81,6 +82,12 @@ const GREEK_OPTIONS = [
     { label: "Ω", value: "\\Omega" },
 ];
 
+const TEMPLATES = [
+    { label: "二次公式", latex: "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}" },
+    { label: "三角恒等式", latex: "\\sin^2 x+\\cos^2 x=1" },
+    { label: "对数换底", latex: "\\log_a b=\\frac{\\ln b}{\\ln a}" },
+];
+
 export default function LatexTextareaPreview({
     value,
     onChange,
@@ -88,9 +95,9 @@ export default function LatexTextareaPreview({
     className,
     placeholder,
 }: LatexTextareaPreviewProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+    const [formulaDialogVisible, setFormulaDialogVisible] = useState(false);
+    const [formulaLatex, setFormulaLatex] = useState("x^2");
+
     const containerRef = useRef<HTMLDivElement>(null);
     const undoStackRef = useRef<string[]>([]);
     const redoStackRef = useRef<string[]>([]);
@@ -166,30 +173,9 @@ export default function LatexTextareaPreview({
         syncHistoryButtons();
     }, [onChange, syncHistoryButtons, value]);
 
-    // When returning from the insert-formula page, pick up the formula param
-    useEffect(() => {
-        const formula = searchParams.get("formula");
-        if (!formula) return;
-
-        const formulaText = `$${formula}$`;
-        applyValue(value ? `${value}\n${formulaText}` : formulaText);
-
-        // Remove the formula param from the URL without re-navigating
-        const next = new URLSearchParams(searchParams.toString());
-        next.delete("formula");
-        const newUrl = next.size > 0 ? `${pathname}?${next.toString()}` : pathname;
-        router.replace(newUrl);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
-
     useEffect(() => {
         syncHistoryButtons();
     }, [syncHistoryButtons]);
-
-    const openFormulaPage = () => {
-        const returnUrl = `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ""}`;
-        router.push(`/insert-formula?returnUrl=${encodeURIComponent(returnUrl)}`);
-    };
 
     return (
         <div className={`flex-1 ${className ?? ""}`} ref={containerRef}>
@@ -261,13 +247,81 @@ export default function LatexTextareaPreview({
                     icon="pi pi-calculator"
                     outlined
                     size="small"
-                    onClick={openFormulaPage}
+                    onClick={() => { setFormulaLatex("x^2"); setFormulaDialogVisible(true); }}
                 />
             </div>
             <div className="mt-2 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
                 <p className="mb-2 text-xs text-[var(--muted)]">LaTeX 预览</p>
                 <AutoCodeLatex className="min-h-8 text-sm" text={value || "请输入内容以预览"} />
             </div>
+            <Dialog
+                visible={formulaDialogVisible}
+                onHide={() => setFormulaDialogVisible(false)}
+                style={{ width: "100vw", height: "100vh", maxHeight: "100vh", margin: 0, borderRadius: 0 }}
+                contentStyle={{ padding: 0 }}
+                modal
+                draggable={false}
+                resizable={false}
+                closable={false}
+                header={
+                    <div className="flex justify-center py-1">
+                        <h1 className="text-xl font-semibold">插入数学公式</h1>
+                    </div>
+                }
+            >
+                <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
+                    <div>
+                        <p className="mb-2 text-sm text-[var(--muted)]">常用模板</p>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {TEMPLATES.map((t) => (
+                                <Button
+                                    key={t.label}
+                                    type="button"
+                                    label={t.label}
+                                    outlined
+                                    size="small"
+                                    onClick={() => setFormulaLatex((prev) => `${prev}${t.latex}`)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
+                        <p className="mb-2 text-xs text-[var(--muted)]">公式编辑器（MathLive）</p>
+                        <MathEditor
+                            value={formulaLatex}
+                            onChange={setFormulaLatex}
+                            virtualKeyboardMode="onfocus"
+                            className="block min-h-14 w-full rounded border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-2 text-base"
+                        />
+                    </div>
+                    <div className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
+                        <p className="mb-2 text-xs text-[var(--muted)]">公式预览</p>
+                        <AutoCodeLatex className="min-h-10 text-sm" text={formulaLatex || "请输入公式"} />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="取消"
+                            severity="secondary"
+                            outlined
+                            onClick={() => setFormulaDialogVisible(false)}
+                        />
+                        <Button
+                            type="button"
+                            label="插入"
+                            icon="pi pi-check"
+                            onClick={() => {
+                                const trimmed = formulaLatex.trim();
+                                if (trimmed) {
+                                    const formulaText = `$${trimmed}$`;
+                                    applyValue(value ? `${value}\n${formulaText}` : formulaText);
+                                }
+                                setFormulaDialogVisible(false);
+                            }}
+                        />
+                    </div>
+                </div>
+            </Dialog>
         </div>
     );
 }
