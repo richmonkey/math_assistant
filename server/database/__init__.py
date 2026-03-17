@@ -1,8 +1,5 @@
-from pathlib import Path
-from peewee import SqliteDatabase
-from models import User
-from config import DATABASE_FILENAME
-from db import db
+from .models import User, UserRecord
+from .db import db
 
 
 def init_database() -> None:

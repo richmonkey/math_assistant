@@ -6,7 +6,7 @@ import traceback
 from auth import authenticate_user, create_access_token, get_current_user, hash_password
 from config import DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_USERNAME
 from database import close_database, init_database
-from models import User, UserRecord
+from database import User, UserRecord
 from schemas import EchoRequest, EchoResponse, LoginRequest, TokenResponse
 
 from logger import init_logger

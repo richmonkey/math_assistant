@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from peewee import DoesNotExist
 
 from config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
-from models import User, UserRecord
+from database import User, UserRecord
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
