@@ -3,11 +3,11 @@
 import { useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
 import { QuestionType } from "../papers-context";
 import { useToast } from "../toast-context";
 import { performAnswerOcr } from "../lib/ocr";
 import OcrPreviewModal from "./OcrPreviewModal";
+import LatexTextareaPreview from "./LatexTextareaPreview";
 
 const blankDelimiter = " | ";
 const choiceDelimiter = ",";
@@ -396,10 +396,9 @@ export default function QuestionAnswerFields({
                 </div>
             ) : questionType === "essay" ? (
                 <div className="flex items-start gap-2">
-                    <InputTextarea
+                    <LatexTextareaPreview
                         value={questionAnswer}
-                        onChange={(event) => onQuestionAnswerChange(event.target.value)}
-                        className="flex-1"
+                        onChange={onQuestionAnswerChange}
                         rows={3}
                     />
                     <div className="flex flex-col">
