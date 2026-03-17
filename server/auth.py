@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import logging
 from fastapi import Header, HTTPException, status
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 from peewee import DoesNotExist
 
@@ -64,6 +64,11 @@ def get_current_user(
         user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token has expired",
+        )
     except JWTError:
         raise credentials_exception
 

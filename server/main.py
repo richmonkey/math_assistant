@@ -1,13 +1,15 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import logging
 from peewee import IntegrityError
 import traceback
-from auth import authenticate_user, create_access_token, get_current_user, hash_password
+from auth import hash_password
+from auth_routes import router as auth_router
 from config import DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_USERNAME
 from database import close_database, init_database
-from database import User, UserRecord
-from schemas import EchoRequest, EchoResponse, LoginRequest, TokenResponse
+from database import User
+from paper_routes import router as paper_router
+from question_routes import router as question_router
 
 from logger import init_logger
 
@@ -44,26 +46,9 @@ def ensure_default_user() -> None:
 
 
 app = FastAPI(title="Math Assistant Auth Service", lifespan=lifespan)
-
-
-@app.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest) -> TokenResponse:
-    user = authenticate_user(payload.username, payload.password)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
-
-    token = create_access_token(user=user)
-    return TokenResponse(access_token=token, token_type="bearer")
-
-
-@app.post("/echo", response_model=EchoResponse)
-def echo(
-    payload: EchoRequest, current_user: UserRecord = Depends(get_current_user)
-) -> EchoResponse:
-    return EchoResponse(message=payload.message, user=current_user.username)
+app.include_router(auth_router)
+app.include_router(paper_router)
+app.include_router(question_router)
 
 
 # print("hash:", hash_password("1"))
