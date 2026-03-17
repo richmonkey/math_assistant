@@ -157,13 +157,15 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "title": "2026 高三数学模拟卷"
+  "title": "2026 高三数学模拟卷",
+  "description": "本卷共 25 题，满分 150 分"
 }
 ```
 
 字段约束：
 
 - `title`: string，长度 1~255
+- `description`: string，可选，默认为 `null`
 
 ### 成功响应
 
@@ -172,10 +174,16 @@ Authorization: Bearer <access_token>
 ```json
 {
   "id": "1",
-  "uid": "1",
-  "title": "2026 高三数学模拟卷"
+  "title": "2026 高三数学模拟卷",
+  "description": "本卷共 25 题，满分 150 分",
+  "updated_at": "2026-03-18T10:00:00"
 }
 ```
+
+字段说明：
+
+- `description`: 可为 `null`
+- `updated_at`: 试卷最近更新时间，ISO 8601 格式
 
 ### 失败响应
 
@@ -202,10 +210,16 @@ Authorization: Bearer <access_token>
 [
   {
     "id": "1",
-    "title": "2026 高三数学模拟卷"
+    "title": "2026 高三数学模拟卷",
+    "description": "本卷共 25 题，满分 150 分",
+    "updated_at": "2026-03-18T10:00:00"
   }
 ]
 ```
+
+字段说明：
+
+- 列表项字段与 `POST /papers` 成功响应一致
 
 ### 失败响应
 
@@ -213,7 +227,78 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 5. 删除试卷
+## 5. 获取试卷详情
+
+### `GET /papers/{paper_id}`
+
+获取指定试卷的完整详情，包括试卷整体批改结果、所有题目及每道题目的批改结果。
+
+### 路径参数
+
+- `paper_id`: string
+
+### 请求头
+
+- `Authorization: Bearer <access_token>`
+
+### 成功响应
+
+- `200 OK`
+
+```json
+{
+  "id": "1",
+  "uid": "1",
+  "title": "2026 高三数学模拟卷",
+  "description": "本卷共 25 题，满分 150 分",
+  "updated_at": "2026-03-18T10:00:00",
+  "grading_result": {
+    "id": "1",
+    "paper_id": "1",
+    "comment": "整体思路清晰，个别小题有计算失误",
+    "score": 88,
+    "max_score": 100
+  },
+  "questions": [
+    {
+      "id": "1",
+      "paper_id": "1",
+      "type": "single",
+      "prompt": "已知函数...",
+      "answer": "A",
+      "grading_result": {
+        "id": "1",
+        "question_id": "1",
+        "comment": "选项正确",
+        "score": 5,
+        "max_score": 5,
+        "is_correct": true
+      }
+    }
+  ]
+}
+```
+
+字段说明：
+
+- `updated_at`: 试卷最近更新时间，ISO 8601 格式
+- `grading_result`: 试卷批改结果，未批改时为 `null`
+- `questions`: 题目列表，按 `id` 升序；每题的 `grading_result` 未批改时为 `null`
+
+### 失败响应
+
+- `401 Unauthorized`
+- `404 Not Found`
+
+```json
+{
+  "detail": "Paper not found"
+}
+```
+
+---
+
+## 6. 删除试卷
 
 ### `DELETE /papers/{paper_id}`
 
@@ -250,7 +335,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 6. 获取试卷下题目列表
+## 7. 获取试卷下题目列表
 
 ### `GET /papers/{paper_id}/questions`
 
@@ -293,7 +378,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 7. 创建题目
+## 8. 创建题目
 
 ### `POST /questions`
 
@@ -350,7 +435,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 8. 更新题目
+## 9. 更新题目
 
 ### `PUT /questions/{question_id}`
 
@@ -403,7 +488,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 9. 删除题目
+## 10. 删除题目
 
 ### `DELETE /questions/{question_id}`
 
@@ -437,6 +522,127 @@ Authorization: Bearer <access_token>
   "detail": "Question not found"
 }
 ```
+
+---
+
+## 11. 上传单题批改结果
+
+### `POST /questions/{question_id}/grading-result`
+
+上传（或覆盖）指定题目的批改结果。若该题目已有批改记录，则会更新原记录；否则创建新记录。
+
+### 路径参数
+
+- `question_id`: string
+
+### 请求头
+
+- `Authorization: Bearer <access_token>`
+
+### 请求体
+
+```json
+{
+  "comment": "步骤完整，计算正确",
+  "score": 8,
+  "max_score": 10,
+  "is_correct": true
+}
+```
+
+字段说明：
+
+- `comment`: string
+- `score`: integer
+- `max_score`: integer
+- `is_correct`: boolean
+
+### 成功响应
+
+- `200 OK`
+
+```json
+{
+  "id": "1",
+  "question_id": "12",
+  "comment": "步骤完整，计算正确",
+  "score": 8,
+  "max_score": 10,
+  "is_correct": true
+}
+```
+
+### 失败响应
+
+- `401 Unauthorized`
+- `404 Not Found`
+
+```json
+{
+  "detail": "Question not found"
+}
+```
+
+- `422 Unprocessable Entity`
+
+---
+
+## 12. 上传整张试卷批改结果
+
+### `POST /papers/{paper_id}/grading-result`
+
+上传（或覆盖）指定试卷的整体批改结果。若该试卷已有批改记录，则会更新原记录；否则创建新记录。
+
+### 路径参数
+
+- `paper_id`: string
+
+### 请求头
+
+- `Authorization: Bearer <access_token>`
+
+### 请求体
+
+```json
+{
+  "comment": "整体思路清晰，个别小题有计算失误",
+  "score": 88,
+  "max_score": 100
+}
+```
+
+字段说明：
+
+- `comment`: string
+- `score`: integer
+- `max_score`: integer
+
+### 成功响应
+
+- `200 OK`
+
+```json
+{
+  "id": "1",
+  "paper_id": "3",
+  "comment": "整体思路清晰，个别小题有计算失误",
+  "score": 88,
+  "max_score": 100
+}
+```
+
+### 失败响应
+
+- `401 Unauthorized`
+- `404 Not Found`
+
+```json
+{
+  "detail": "Paper not found"
+}
+```
+
+- `422 Unprocessable Entity`
 
 ---
 

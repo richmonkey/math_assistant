@@ -26,21 +26,19 @@ class EchoResponse(BaseModel):
 
 class CreatePaperRequest(BaseModel):
     title: str = Field(min_length=1, max_length=255)
+    description: str | None = None
 
 
 class PaperResponse(BaseModel):
     id: str
-    uid: str
+
     title: str
+    description: str | None = None
+    updated_at: datetime
 
 
 class DeletePaperResponse(BaseModel):
     message: str
-
-
-class PaperSummaryResponse(BaseModel):
-    id: str
-    title: str
 
 
 QuestionType = Literal["single", "multiple", "blank", "essay"]
@@ -69,3 +67,52 @@ class QuestionResponse(BaseModel):
 
 class DeleteQuestionResponse(BaseModel):
     message: str
+
+
+class UploadQuestionGradingResultRequest(BaseModel):
+    comment: str = Field()
+    score: int
+    max_score: int
+    is_correct: bool
+
+
+class QuestionGradingResultResponse(BaseModel):
+    id: str
+    question_id: str
+    comment: str
+    score: int
+    max_score: int
+    is_correct: bool
+
+
+class UploadPaperGradingResultRequest(BaseModel):
+    comment: str = Field()
+    score: int
+    max_score: int
+
+
+class PaperGradingResultResponse(BaseModel):
+    id: str
+    paper_id: str
+    comment: str
+    score: int
+    max_score: int
+
+
+class QuestionDetailResponse(BaseModel):
+    id: str
+    paper_id: str
+    type: QuestionType
+    prompt: str
+    answer: str
+    grading_result: QuestionGradingResultResponse | None = None
+
+
+class PaperDetailResponse(BaseModel):
+    id: str
+    uid: str
+    title: str
+    description: str | None = None
+    updated_at: datetime
+    grading_result: PaperGradingResultResponse | None = None
+    questions: list[QuestionDetailResponse] = []

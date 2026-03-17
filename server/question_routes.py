@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from peewee import DoesNotExist
 
 from auth import get_current_user
-from database import Paper, Question, UserRecord
+from database import Paper, Question, QuestionGradingResult, UserRecord
 from schemas import (
     CreateQuestionRequest,
     DeleteQuestionResponse,
+    QuestionGradingResultResponse,
     QuestionResponse,
+    UploadQuestionGradingResultRequest,
     UpdateQuestionRequest,
 )
 
@@ -107,4 +109,53 @@ def update_question(
         type=question.type,
         prompt=question.prompt,
         answer=question.answer,
+    )
+
+
+@router.post(
+    "/questions/{question_id}/grading-result",
+    response_model=QuestionGradingResultResponse,
+)
+def upload_question_grading_result(
+    question_id: str,
+    payload: UploadQuestionGradingResultRequest,
+    current_user: UserRecord = Depends(get_current_user),
+) -> QuestionGradingResultResponse:
+    question_id_int = _parse_int_id(question_id, "question_id")
+
+    try:
+        Question.select(Question.id).join(
+            Paper, on=(Question.paper_id == Paper.id)
+        ).where((Question.id == question_id_int) & (Paper.uid == current_user.id)).get()
+    except DoesNotExist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Question not found",
+        )
+
+    result = QuestionGradingResult.get_or_none(
+        QuestionGradingResult.question_id == question_id_int
+    )
+    if result is None:
+        result = QuestionGradingResult.create(
+            question_id=question_id_int,
+            comment=payload.comment,
+            score=payload.score,
+            max_score=payload.max_score,
+            is_correct=payload.is_correct,
+        )
+    else:
+        result.comment = payload.comment
+        result.score = payload.score
+        result.max_score = payload.max_score
+        result.is_correct = payload.is_correct
+        result.save()
+
+    return QuestionGradingResultResponse(
+        id=str(result.id),
+        question_id=str(result.question_id),
+        comment=result.comment,
+        score=result.score,
+        max_score=result.max_score,
+        is_correct=result.is_correct,
     )
