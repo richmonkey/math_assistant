@@ -54,6 +54,7 @@ type Question = {
     prompt: string;
     answer: string;
     noteId?: string;
+    sessionId?: string;
     gradingResult?: QuestionGradingResult;
 };
 
@@ -72,6 +73,7 @@ type PapersContextValue = {
     addQuestion: (paperId: string, input: QuestionInput) => Promise<Question>;
     updateQuestion: (paperId: string, questionId: string, update: QuestionInput) => Promise<void>;
     updateQuestionNoteId: (paperId: string, questionId: string, noteId: string) => void;
+    updateQuestionSessionId: (paperId: string, questionId: string, sessionId: string) => void;
     deleteQuestion: (paperId: string, questionId: string) => Promise<void>;
     getPaperById: (id: string) => Paper | undefined;
     syncPaperById: (id: string) => Promise<Paper>;
@@ -91,6 +93,7 @@ function mapServerQuestion(question: ServerQuestionResponse): Question {
         type: question.type,
         prompt: question.prompt,
         answer: question.answer,
+        sessionId: question.session_id,
     };
 }
 
@@ -310,6 +313,24 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         );
     };
 
+    const updateQuestionSessionId = (paperId: string, questionId: string, sessionId: string) => {
+        setPapers((current) =>
+            current.map((paper) =>
+                paper.id === paperId
+                    ? {
+                        ...paper,
+                        questions: paper.questions.map((question) =>
+                            question.id === questionId
+                                ? { ...question, sessionId }
+                                : question
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : paper
+            )
+        );
+    };
+
     const deleteQuestion = async (paperId: string, questionId: string) => {
         await deleteQuestionApi(questionId);
         setPapers((current) =>
@@ -465,6 +486,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         addQuestion,
         updateQuestion,
         updateQuestionNoteId,
+        updateQuestionSessionId,
         deleteQuestion,
         getPaperById,
         syncPaperById,

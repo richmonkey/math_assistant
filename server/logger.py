@@ -5,12 +5,14 @@ from logging import Logger
 from pathlib import Path
 from typing import Optional
 
+MAX_LOG_MESSAGE_LENGTH = 1024
+
 
 # 配置日志过滤器，截断超长日志
 class TruncateLogFilter(logging.Filter):
     """截断超长日志消息"""
 
-    def __init__(self, max_length=500):
+    def __init__(self, max_length=MAX_LOG_MESSAGE_LENGTH):
         super().__init__()
         self.max_length = max_length
 
@@ -61,7 +63,9 @@ def init_logger(log_filename: Optional[str] = None, level: int = logging.DEBUG):
             log_filename, maxBytes=1024 * 1024 * 1024, backupCount=2
         )
         handler.setLevel(level)
-        handler.addFilter(TruncateLogFilter(max_length=300))  # 只对这个 handler 截断
+        handler.addFilter(
+            TruncateLogFilter(max_length=MAX_LOG_MESSAGE_LENGTH)
+        )  # 只对这个 handler 截断
         formatter = logging.Formatter(
             "%(asctime)s %(name)s %(filename)s:%(lineno)d -  %(levelname)s - %(message)s"
         )
@@ -81,7 +85,9 @@ def init_logger(log_filename: Optional[str] = None, level: int = logging.DEBUG):
         # stdout handler - 添加截断 filter
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(level)
-        ch.addFilter(TruncateLogFilter(max_length=300))  # 只对这个 handler 截断
+        ch.addFilter(
+            TruncateLogFilter(max_length=MAX_LOG_MESSAGE_LENGTH)
+        )  # 只对这个 handler 截断
         formatter = logging.Formatter(
             "%(asctime)s %(name)s %(filename)s:%(lineno)d -  %(levelname)s - %(message)s"
         )

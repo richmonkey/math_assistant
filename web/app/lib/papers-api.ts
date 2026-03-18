@@ -13,6 +13,7 @@ export type ServerQuestionResponse = {
     type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
+    session_id?: string;
 };
 
 export type ServerQuestionGradingResultResponse = {

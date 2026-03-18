@@ -86,6 +86,16 @@ export default function QuestionItem({
                         onClick={() => router.push(`/papers/edit-answer?paperId=${paperId}&questionId=${question.id}`)}
                     />
                     <Button
+                        label="问ai"
+                        icon="pi pi-comments"
+                        outlined
+                        onClick={() =>
+                            router.push(
+                                `/papers/ask-ai?paperId=${encodeURIComponent(paperId)}&questionId=${encodeURIComponent(question.id)}`
+                            )
+                        }
+                    />
+                    <Button
                         label="编辑"
                         icon="pi pi-pencil"
                         outlined
