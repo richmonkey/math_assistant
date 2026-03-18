@@ -1,5 +1,6 @@
 fastapi[standard]
-uvicorn
+uvicorn[standard]
+uvloop>=0.17.0
 peewee
 python-jose
 passlib[bcrypt]

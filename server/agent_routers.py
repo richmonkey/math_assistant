@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from fastapi import HTTPException, APIRouter, Depends, status
 from pydantic import BaseModel
 from peewee import DoesNotExist
@@ -249,7 +250,9 @@ async def chat_endpoint(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Question not found",
             )
-
+        logging.info(
+            "Received message for session %s: %s", request.session_id, request.message
+        )
         # 注意这里使用的是 ainvoke (异步调用)，这对 FastAPI 服务器的并发性能至关重要
         response = await chain_with_history.ainvoke(
             {
@@ -258,6 +261,7 @@ async def chat_endpoint(
             },
             config={"configurable": {"session_id": request.session_id}},
         )
+        logging.info("Generated reply for session %s: %s", request.session_id, response)
         return ChatResponse(session_id=request.session_id, reply=response)
 
     except Exception as e:

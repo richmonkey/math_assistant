@@ -26,7 +26,8 @@ const SYMBOL_OPTIONS = [
     { label: "x²", value: "x^n" },
     { label: "x₂", value: "x_n" },
     { label: "x₂²", value: "x_a^b" },
-    { label: "÷", value: "\\frac{a}{b}" },
+    { label: "÷", value: "\\div" },
+    { label: "a/b", value: "\\frac{a}{b}" },
     { label: "limit", value: "\\lim_{x \\to 0}" },
     { label: "∑", value: "\\sum_{a}^{b}" },
     { label: "∏", value: "\\prod_{a}^{b}" },
@@ -380,7 +381,7 @@ export default function LatexTextareaPreview({
             </div>
             <div className="mt-2 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
                 <p className="mb-2 text-xs text-[var(--muted)]">LaTeX 预览</p>
-                <AutoCodeLatex className="min-h-8 text-sm" text={value || "请输入内容以预览"} />
+                <AutoCodeLatex className="min-h-8 text-sm" text={value || ""} />
             </div>
             <Dialog
                 //mathlive 的虚拟键盘默认的z-index是105，小于105保证虚拟键盘可以显示在dialog上方

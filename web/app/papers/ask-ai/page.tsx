@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
-import { InputTextarea } from "primereact/inputtextarea";
 import { ProgressSpinner } from "primereact/progressspinner";
 import AutoLatex from "../../components/AutoLatex";
+import LatexTextareaPreview from "../../components/LatexTextareaPreview";
 import { type Question, usePapers } from "../../papers-context";
 import {
     chatWithAgent,
@@ -167,8 +167,8 @@ function AskAiConversation({
     };
 
     return (
-        <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
-            <div ref={listRef} className="mb-4 h-[50vh] space-y-3 overflow-y-auto pr-1">
+        <section className="flex min-h-0 flex-1 flex-col rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
+            <div ref={listRef} className="mb-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                 {isInitializing ? (
                     <div className="rounded border border-[var(--surface-border)] p-4 text-sm">
                         <div className="flex items-center gap-2">
@@ -203,24 +203,18 @@ function AskAiConversation({
                 )}
             </div>
 
-            <div className="flex gap-2">
-                <InputTextarea
+            <div className="flex items-end gap-2">
+                <LatexTextareaPreview
                     value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    placeholder={sessionId ? "输入你的问题，例如：这题第一步怎么做？" : "正在初始化会话，请稍候..."}
+                    onChange={setInput}
                     rows={3}
-                    className="w-full"
-                    disabled={isInitializing || !sessionId}
-                    onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.shiftKey) {
-                            event.preventDefault();
-                            void handleSend();
-                        }
-                    }}
+                    placeholder={sessionId ? "输入你的问题，例如：这题第一步怎么做？" : "正在初始化会话，请稍候..."}
+                    showOcrButton={false}
                 />
                 <Button
                     label={isSending ? "发送中" : "发送"}
                     icon="pi pi-send"
+                    className="shrink-0"
                     onClick={() => {
                         void handleSend();
                     }}
@@ -238,6 +232,14 @@ function AskAiPageContent() {
 
     const { getPaperById } = usePapers();
     const router = useRouter();
+
+    useEffect(() => {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, []);
 
     const paper = useMemo(() => getPaperById(paperId), [getPaperById, paperId]);
     const question = useMemo(
@@ -265,8 +267,8 @@ function AskAiPageContent() {
     }
 
     return (
-        <main className="mx-auto max-w-3xl p-6">
-            <div className="mb-6 flex items-center gap-3">
+        <main className="mx-auto flex h-screen max-w-3xl flex-col overflow-hidden p-6">
+            <div className="mb-6 flex shrink-0 items-center gap-3">
                 <Button
                     icon="pi pi-arrow-left"
                     text
@@ -276,7 +278,7 @@ function AskAiPageContent() {
                 <h1 className="text-xl font-semibold">问 AI</h1>
             </div>
 
-            <section className="mb-4 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
+            <section className="mb-4 shrink-0 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
                 <p className="mb-2 text-sm text-[var(--muted)]">
                     题型：{questionTypeLabels[question.type]}
                 </p>
