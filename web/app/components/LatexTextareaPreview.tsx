@@ -161,9 +161,7 @@ export default function LatexTextareaPreview({
         const safeEnd = Math.max(safeStart, Math.min(end, value.length));
         const nextValue = `${value.slice(0, safeStart)}${token}${value.slice(safeEnd)}`;
         const nextCursor = safeStart + token.length;
-
         applyValue(nextValue);
-        focusTextareaAt(nextCursor);
     }, [applyValue, focusTextareaAt, value]);
 
     const insertAtCursor = useCallback(
@@ -177,6 +175,7 @@ export default function LatexTextareaPreview({
             const start = textarea.selectionStart ?? value.length;
             const end = textarea.selectionEnd ?? value.length;
             insertAtRange(token, start, end);
+            focusTextareaAt(start + token.length);
         },
         [getTextarea, insertAtRange, value],
     );
