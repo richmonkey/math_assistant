@@ -39,13 +39,17 @@ const normalizeQuestions = (payload: ImportPayload | null) => {
         return [] as ImportQuestion[];
     }
 
-    return payload.questions.map((question, index) => ({
-        id: `import-${Date.now()}-${index}`,
-        number: question.number || `${index + 1}`,
-        type: question.type ?? "unknown",
-        content: question.content ?? "",
-        options: [],
-    }));
+    return payload.questions.map((question, index) => {
+        let content = question.content ?? "";
+        content = content.replaceAll(/\\n/g, "\n");
+        return {
+            id: `import-${Date.now()}-${index}`,
+            number: question.number || `${index + 1}`,
+            type: question.type ?? "unknown",
+            content: content,
+            options: [],
+        }
+    });
 };
 
 function ImportPreviewPageContent() {

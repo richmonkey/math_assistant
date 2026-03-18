@@ -15,6 +15,7 @@ type LatexTextareaPreviewProps = {
     rows?: number;
     className?: string;
     placeholder?: string;
+    autoFocus?: boolean;
     performOcr?: (file: File) => Promise<string>;
     showOcrButton?: boolean;
 };
@@ -98,11 +99,12 @@ export default function LatexTextareaPreview({
     rows = 3,
     className,
     placeholder,
+    autoFocus = false,
     performOcr,
     showOcrButton = true,
 }: LatexTextareaPreviewProps) {
     const [formulaDialogVisible, setFormulaDialogVisible] = useState(false);
-    const [formulaLatex, setFormulaLatex] = useState("x^2");
+    const [formulaLatex, setFormulaLatex] = useState("");
     const ocrInputRef = useRef<HTMLInputElement>(null);
     const [isOcring, setIsOcring] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -117,6 +119,7 @@ export default function LatexTextareaPreview({
     const [canRedo, setCanRedo] = useState(false);
     const [selectedSymbol, setSelectedSymbol] = useState("");
     const [selectedGreek, setSelectedGreek] = useState("");
+    const formulaInsertRangeRef = useRef({ start: 0, end: 0 });
 
     const syncHistoryButtons = useCallback(() => {
         setCanUndo(undoStackRef.current.length > 0);
@@ -142,29 +145,40 @@ export default function LatexTextareaPreview({
         return containerRef.current?.querySelector("textarea") ?? null;
     }, []);
 
+    const focusTextareaAt = useCallback((cursor: number) => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const textarea = getTextarea();
+                if (!textarea) return;
+                textarea.focus();
+                textarea.setSelectionRange(cursor, cursor);
+            });
+        });
+    }, [getTextarea]);
+
+    const insertAtRange = useCallback((token: string, start: number, end: number) => {
+        const safeStart = Math.max(0, Math.min(start, value.length));
+        const safeEnd = Math.max(safeStart, Math.min(end, value.length));
+        const nextValue = `${value.slice(0, safeStart)}${token}${value.slice(safeEnd)}`;
+        const nextCursor = safeStart + token.length;
+
+        applyValue(nextValue);
+        focusTextareaAt(nextCursor);
+    }, [applyValue, focusTextareaAt, value]);
+
     const insertAtCursor = useCallback(
         (token: string) => {
             const textarea = getTextarea();
             if (!textarea) {
-                applyValue(value ? `${value} ${token}` : token);
+                insertAtRange(token, value.length, value.length);
                 return;
             }
 
             const start = textarea.selectionStart ?? value.length;
             const end = textarea.selectionEnd ?? value.length;
-            const nextValue = `${value.slice(0, start)}${token}${value.slice(end)}`;
-            const nextCursor = start + token.length;
-
-            applyValue(nextValue);
-
-            requestAnimationFrame(() => {
-                const latestTextarea = getTextarea();
-                if (!latestTextarea) return;
-                latestTextarea.focus();
-                latestTextarea.setSelectionRange(nextCursor, nextCursor);
-            });
+            insertAtRange(token, start, end);
         },
-        [applyValue, getTextarea, value],
+        [getTextarea, insertAtRange, value],
     );
 
     const undo = useCallback(() => {
@@ -325,6 +339,7 @@ export default function LatexTextareaPreview({
                 className="w-full"
                 rows={rows}
                 placeholder={placeholder}
+                autoFocus={autoFocus}
             />
             <div className="mt-2 flex justify-end gap-2">
                 <Button
@@ -333,7 +348,14 @@ export default function LatexTextareaPreview({
                     icon="pi pi-calculator"
                     outlined
                     size="small"
-                    onClick={() => { setFormulaLatex(""); setFormulaDialogVisible(true); }}
+                    onClick={() => {
+                        const textarea = getTextarea();
+                        const start = textarea?.selectionStart ?? value.length;
+                        const end = textarea?.selectionEnd ?? value.length;
+                        formulaInsertRangeRef.current = { start, end };
+                        setFormulaLatex("");
+                        setFormulaDialogVisible(true);
+                    }}
                 />
                 {showOcrButton && (
                     <>
@@ -421,11 +443,15 @@ export default function LatexTextareaPreview({
                             icon="pi pi-check"
                             onClick={() => {
                                 const trimmed = formulaLatex.trim();
+                                setFormulaDialogVisible(false);
                                 if (trimmed) {
                                     const formulaText = `$${trimmed}$`;
-                                    applyValue(value ? `${value}\n${formulaText}` : formulaText);
+                                    insertAtRange(
+                                        formulaText,
+                                        formulaInsertRangeRef.current.start,
+                                        formulaInsertRangeRef.current.end
+                                    );
                                 }
-                                setFormulaDialogVisible(false);
                             }}
                         />
                     </div>

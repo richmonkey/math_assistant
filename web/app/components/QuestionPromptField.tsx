@@ -7,6 +7,7 @@ type QuestionPromptFieldProps = {
     value: string;
     onChange: (value: string) => void;
     isDialogOpen: boolean;
+    autoFocus?: boolean;
 };
 
 async function ocrQuestion(file: File): Promise<string> {
@@ -17,6 +18,7 @@ async function ocrQuestion(file: File): Promise<string> {
 export default function QuestionPromptField({
     value,
     onChange,
+    autoFocus = false,
 }: QuestionPromptFieldProps) {
     return (
         <div>
@@ -25,6 +27,7 @@ export default function QuestionPromptField({
                 value={value}
                 onChange={onChange}
                 rows={6}
+                autoFocus={autoFocus}
                 performOcr={ocrQuestion}
                 showOcrButton
             />

@@ -81,6 +81,7 @@ function EditQuestionPageContent() {
                     value={questionPrompt}
                     onChange={setQuestionPrompt}
                     isDialogOpen={true}
+                    autoFocus
                 />
                 {error && <p className="text-sm text-red-400">{error}</p>}
                 <div className="flex justify-end gap-2">

@@ -125,6 +125,7 @@ function EditImportQuestionPageContent() {
                     value={draftContent}
                     onChange={setDraftContent}
                     rows={6}
+                    autoFocus={true}
                     showOcrButton={false}
                 />
             </div>

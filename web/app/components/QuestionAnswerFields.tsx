@@ -231,6 +231,7 @@ type QuestionAnswerFieldsProps = {
     questionAnswer: string;
     blankAnswers: string[];
     choiceAnswers: string[];
+    autoFocus?: boolean;
     onQuestionAnswerChange: (value: string) => void;
     onBlankAnswerChange: (index: number, value: string) => void;
     onAddBlankAnswer: () => void;
@@ -244,6 +245,7 @@ export default function QuestionAnswerFields({
     questionAnswer,
     blankAnswers,
     choiceAnswers,
+    autoFocus = false,
     onQuestionAnswerChange,
     onBlankAnswerChange,
     onAddBlankAnswer,
@@ -264,6 +266,7 @@ export default function QuestionAnswerFields({
                                 onChange={(event) => onBlankAnswerChange(index, event.target.value)}
                                 className="flex-1"
                                 placeholder={`空位 ${index + 1}`}
+                                autoFocus={autoFocus && index === 0}
                             />
                             <Button
                                 icon="pi pi-trash"
@@ -330,12 +333,14 @@ export default function QuestionAnswerFields({
                     onChange={onQuestionAnswerChange}
                     performOcr={performAnswerOcr}
                     rows={8}
+                    autoFocus={autoFocus}
                 />
             ) : questionType === "single" ? (
                 <div className="flex flex-col gap-2">
                     <select
                         value={questionAnswer}
                         onChange={(event) => onQuestionAnswerChange(event.target.value)}
+                        autoFocus={autoFocus}
                         className="w-full rounded border border-[var(--surface-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                     >
                         {choiceOptions.map((option) => (

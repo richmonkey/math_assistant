@@ -68,6 +68,7 @@ function EditAnswerPageContent() {
                     questionAnswer={answerState.questionAnswer}
                     blankAnswers={answerState.blankAnswers}
                     choiceAnswers={answerState.choiceAnswers}
+                    autoFocus
                     onQuestionAnswerChange={answerState.setQuestionAnswer}
                     onBlankAnswerChange={answerState.handleBlankAnswerChange}
                     onAddBlankAnswer={answerState.addBlankAnswer}

@@ -55,7 +55,7 @@ export default function NewPaperDialog({ nextIndex }: NewPaperDialogProps) {
                 onHide={closeDialog}
                 className="w-full max-w-lg"
             >
-                <div className="flex flex-col gap-4">
+                <div className="m-3 flex flex-col gap-4">
                     <div>
                         <label className="mb-2 block text-sm">试卷标题</label>
                         <InputText
