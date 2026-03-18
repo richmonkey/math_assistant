@@ -74,7 +74,8 @@ function NewQuestionPageContent() {
                         <option value="single">单选题</option>
                         <option value="multiple">多选题</option>
                         <option value="blank">填空题</option>
-                        <option value="essay">解答题</option>
+                        <option value="judge">判断题</option>
+                        <option value="free">解答题</option>
                     </select>
                 </div>
                 <QuestionPromptField

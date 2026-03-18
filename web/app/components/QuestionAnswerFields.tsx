@@ -10,6 +10,7 @@ import { performAnswerOcr } from "../lib/ocr";
 const blankDelimiter = " | ";
 const choiceDelimiter = ",";
 const choiceOptions = ["A", "B", "C", "D"];
+const judgeOptions = ["正确", "错误"];
 
 const splitBlankAnswers = (value: string) =>
     value
@@ -44,6 +45,13 @@ const ensureSingleAnswer = (value: string, fallback = "A") => {
     return derived[0] ?? fallback;
 };
 
+const ensureJudgeAnswer = (value: string, fallback = "正确") => {
+    if (judgeOptions.includes(value)) {
+        return value;
+    }
+    return fallback;
+};
+
 const createAnswerState = (type: QuestionType, answer: string): AnswerState => {
     if (type === "blank") {
         return {
@@ -64,6 +72,14 @@ const createAnswerState = (type: QuestionType, answer: string): AnswerState => {
     if (type === "single") {
         return {
             questionAnswer: ensureSingleAnswer(answer),
+            blankAnswers: [""],
+            choiceAnswers: ["A"],
+        };
+    }
+
+    if (type === "judge") {
+        return {
+            questionAnswer: ensureJudgeAnswer(answer),
             blankAnswers: [""],
             choiceAnswers: ["A"],
         };
@@ -103,6 +119,13 @@ const normalizeAnswerState = (type: QuestionType, state: AnswerState): AnswerSta
         return {
             ...state,
             questionAnswer: nextAnswer,
+        };
+    }
+
+    if (type === "judge") {
+        return {
+            ...state,
+            questionAnswer: ensureJudgeAnswer(state.questionAnswer),
         };
     }
 
@@ -327,7 +350,7 @@ export default function QuestionAnswerFields({
                         onClick={onAddChoiceAnswer}
                     />
                 </div>
-            ) : questionType === "essay" ? (
+            ) : questionType === "free" ? (
                 <LatexTextareaPreview
                     value={questionAnswer}
                     onChange={onQuestionAnswerChange}
@@ -335,6 +358,21 @@ export default function QuestionAnswerFields({
                     rows={8}
                     autoFocus={autoFocus}
                 />
+            ) : questionType === "judge" ? (
+                <div className="flex flex-col gap-2">
+                    <select
+                        value={ensureJudgeAnswer(questionAnswer)}
+                        onChange={(event) => onQuestionAnswerChange(event.target.value)}
+                        autoFocus={autoFocus}
+                        className="w-full rounded border border-[var(--surface-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                        {judgeOptions.map((option) => (
+                            <option key={option} value={option}>
+                                {option}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             ) : questionType === "single" ? (
                 <div className="flex flex-col gap-2">
                     <select

@@ -115,6 +115,7 @@ function EditImportQuestionPageContent() {
                         <option value="fill_blank">填空题</option>
                         <option value="calculation">计算题</option>
                         <option value="proof">证明题</option>
+                        <option value="judge">判断题</option>
                         <option value="unknown">未知类型</option>
                     </select>
                 </div>

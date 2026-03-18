@@ -1,8 +1,13 @@
 import { chatCompletions } from "./ai";
+import {
+    isTxtFile,
+    parseQuestionsFromPayload,
+    parseQuestionsFromTxtFile,
+} from "./txt-import";
 
 export type PaperQuestion = {
     number: string;
-    type: "multiple_choice" | "fill_blank" | "calculation" | "proof" | "unknown";
+    type: "multiple_choice" | "fill_blank" | "calculation" | "proof" | "judge" | "unknown";
     content: string;
     options: { label: string; text: string }[];
 };
@@ -102,6 +107,10 @@ async function _performOcr(file: File, prompt: string): Promise<string> {
 }
 
 export async function load_paper_image(img: File): Promise<PaperQuestion[]> {
+    if (isTxtFile(img)) {
+        return parseQuestionsFromTxtFile(img);
+    }
+
     const prompt = `You are a professional OCR system specialized in high school mathematics exams.
 
 Your task is to extract ONLY printed content from the provided exam image and convert it into structured JSON.
@@ -129,7 +138,7 @@ JSON FORMAT:
   "questions": [
     {
       "number": "",
-      "type": "multiple_choice | fill_blank | calculation | proof | unknown",
+      "type": "multiple_choice | fill_blank | calculation | proof | judge | unknown",
       "content": "",
     }
   ]
@@ -144,9 +153,10 @@ Return JSON only.`;
 
     let content = await _performOcr(img, prompt);
     console.log(content);
-    const obj = parseOcrJson<{ questions: PaperQuestion[] }>(content);
-    console.log("Extracted JSON:", obj);
-    return obj.questions;
+    const obj = parseOcrJson<unknown>(content);
+    const questions = parseQuestionsFromPayload(obj);
+    console.log("Extracted JSON:", { questions });
+    return questions;
 }
 
 export async function performQuestionOcr(file: File): Promise<PaperQuestion> {

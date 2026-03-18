@@ -188,7 +188,7 @@ function PaperDetailPageContent() {
                                 <input
                                     ref={importInputRef}
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/*,.txt,text/plain"
                                     onChange={handleImportChange}
                                     className="hidden"
                                 />

@@ -19,7 +19,7 @@ function EditAnswerPageContent() {
     );
     const router = useRouter();
 
-    const answerState = useAnswerState(question?.type ?? "essay", question?.answer ?? "");
+    const answerState = useAnswerState(question?.type ?? "free", question?.answer ?? "");
     const [error, setError] = useState("");
 
     const handleSave = async () => {

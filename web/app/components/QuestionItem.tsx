@@ -16,7 +16,8 @@ const questionTypeLabels: Record<string, string> = {
     single: "单选题",
     multiple: "多选题",
     blank: "填空题",
-    essay: "解答题",
+    judge: "判断题",
+    free: "解答题",
 };
 
 const formatAnswer = (type: string, answer: string) => {

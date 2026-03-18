@@ -47,7 +47,8 @@ Authorization: Bearer <access_token>
 - `single`
 - `multiple`
 - `blank`
-- `essay`
+- `judge`
+- `free`
 
 ### 3. 常见错误格式
 
@@ -402,7 +403,7 @@ Authorization: Bearer <access_token>
 字段约束：
 
 - `paper_id`: string
-- `type`: `single | multiple | blank | essay`
+- `type`: `single | multiple | blank | judge | free`
 - `prompt`: string
 - `answer`: string
 
@@ -453,7 +454,7 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "type": "essay",
+  "type": "free",
   "prompt": "证明：若 a>b>0，则...",
   "answer": "略"
 }
@@ -467,7 +468,7 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "paper_id": "1",
-  "type": "essay",
+  "type": "free",
   "prompt": "证明：若 a>b>0，则...",
   "answer": "略"
 }

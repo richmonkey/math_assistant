@@ -41,7 +41,7 @@ class DeletePaperResponse(BaseModel):
     message: str
 
 
-QuestionType = Literal["single", "multiple", "blank", "essay"]
+QuestionType = Literal["single", "multiple", "blank", "judge", "free"]
 
 
 class CreateQuestionRequest(BaseModel):

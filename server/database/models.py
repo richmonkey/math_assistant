@@ -38,7 +38,8 @@ class Question(BaseModel):
             ("single", "single"),
             ("multiple", "multiple"),
             ("blank", "blank"),
-            ("essay", "essay"),
+            ("judge", "judge"),
+            ("free", "free"),
         ),
     )
     prompt = TextField()

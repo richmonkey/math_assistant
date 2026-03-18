@@ -18,7 +18,7 @@ function EditQuestionPageContent() {
     );
     const router = useRouter();
 
-    const [questionType, setQuestionType] = useState<QuestionType>(question?.type ?? "essay");
+    const [questionType, setQuestionType] = useState<QuestionType>(question?.type ?? "free");
     const [questionPrompt, setQuestionPrompt] = useState(question?.prompt ?? "");
     const [error, setError] = useState("");
 
@@ -74,7 +74,8 @@ function EditQuestionPageContent() {
                         <option value="single">单选题</option>
                         <option value="multiple">多选题</option>
                         <option value="blank">填空题</option>
-                        <option value="essay">解答题</option>
+                        <option value="judge">判断题</option>
+                        <option value="free">解答题</option>
                     </select>
                 </div>
                 <QuestionPromptField

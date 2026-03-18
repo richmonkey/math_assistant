@@ -46,7 +46,7 @@ type Paper = {
     gradingResult?: GradingResult;
 };
 
-type QuestionType = "single" | "multiple" | "blank" | "essay";
+type QuestionType = "single" | "multiple" | "blank" | "judge" | "free";
 
 type Question = {
     id: string;
@@ -424,16 +424,16 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const createdQuestions = await Promise.all(
-                inputs.map((input) =>
-                    createQuestion({
-                        paperId,
-                        type: input.type,
-                        prompt: input.prompt,
-                        answer: input.answer ?? "",
-                    })
-                )
-            );
+            let createdQuestions = [];
+            for (const input of inputs) {
+                const question = await createQuestion({
+                    paperId,
+                    type: input.type,
+                    prompt: input.prompt,
+                    answer: input.answer ?? "",
+                });
+                createdQuestions.push(question);
+            }
 
             const mappedQuestions = createdQuestions.map((question) =>
                 mapServerQuestion(question)

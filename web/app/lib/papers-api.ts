@@ -10,7 +10,7 @@ export type ServerPaperResponse = {
 export type ServerQuestionResponse = {
     id: string;
     paper_id: string;
-    type: "single" | "multiple" | "blank" | "essay";
+    type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
 };
@@ -104,7 +104,7 @@ export function createPaper(payload: { title: string; description?: string | nul
 
 export function createQuestion(payload: {
     paperId: string;
-    type: "single" | "multiple" | "blank" | "essay";
+    type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
 }) {
@@ -121,7 +121,7 @@ export function createQuestion(payload: {
 
 export function updateQuestionApi(payload: {
     questionId: string;
-    type: "single" | "multiple" | "blank" | "essay";
+    type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
 }) {

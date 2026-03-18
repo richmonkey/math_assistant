@@ -13,6 +13,7 @@ type ImportQuestionType =
     | "fill_blank"
     | "calculation"
     | "proof"
+    | "judge"
     | "unknown";
 
 type ImportQuestion = {
@@ -31,6 +32,7 @@ const questionTypeLabels: Record<ImportQuestionType, string> = {
     fill_blank: "填空题",
     calculation: "计算题",
     proof: "证明题",
+    judge: "判断题",
     unknown: "未知类型",
 };
 
@@ -67,10 +69,12 @@ function ImportPreviewPageContent() {
                 return "blank";
             case "calculation":
             case "proof":
-                return "essay";
+                return "free";
+            case "judge":
+                return "judge";
             case "unknown":
             default:
-                return "essay";
+                return "free";
         }
     };
 
