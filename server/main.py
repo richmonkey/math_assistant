@@ -12,6 +12,10 @@ from database import User
 from paper_routes import router as paper_router
 from question_routes import router as question_router
 from agent_routers import router as agent_router
+
+# from openai_routes import router as openai_router
+from ocr_routes import router as ocr_router
+from grading_routes import router as grading_router
 from logger import init_logger
 
 
@@ -61,6 +65,9 @@ app.include_router(auth_router, prefix="/v1")
 app.include_router(paper_router, prefix="/v1")
 app.include_router(question_router, prefix="/v1")
 app.include_router(agent_router, prefix="/v1")
+# app.include_router(openai_router, prefix="/v1")
+app.include_router(ocr_router, prefix="/v1")
+app.include_router(grading_router, prefix="/v1")
 
 
 # print("hash:", hash_password("1"))

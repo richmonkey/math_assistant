@@ -1,6 +1,6 @@
 "use client";
 
-import { performQuestionOcr } from "../lib/ocr";
+import { performQuestionOcr } from "../lib/ocr-api";
 import LatexTextareaPreview from "./LatexTextareaPreview";
 
 type QuestionPromptFieldProps = {

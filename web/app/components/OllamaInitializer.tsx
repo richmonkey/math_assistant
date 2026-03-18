@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { initOllama } from "../lib/ollama";
-import { initOpenAI } from "../lib/openai";
+
 import type { Config } from "../../electron";
 
 type InitStatus = "loading" | "success" | "error";
@@ -25,14 +24,14 @@ export default function OllamaInitializer({ children }: OllamaInitializerProps) 
             if (window.notesAPI) {
                 config = await window.notesAPI.loadConfig();
             }
-            if (config.openai) {
-                initOpenAI(config.openai);
-            } else {
-                initOllama({ host: config.ollama?.host });
-                // const defaultBaseURL = "http://localhost:11434/v1";
-                // const defaultModel = "qwen3-vl:8b-instruct";
-                // initOpenAI(defaultBaseURL, "ollama", defaultModel);
-            }
+            // if (config.openai) {
+            //     initOpenAI(config.openai);
+            // } else {
+            //     initOllama({ host: config.ollama?.host });
+            //     // const defaultBaseURL = "http://localhost:11434/v1";
+            //     // const defaultModel = "qwen3-vl:8b-instruct";
+            //     // initOpenAI(defaultBaseURL, "ollama", defaultModel);
+            // }
             setStatus("success");
         } catch (error) {
             console.error("Failed to initialize Ollama:", error);

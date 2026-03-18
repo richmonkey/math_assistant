@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { GradingResult, usePapers } from "../../papers-context";
 import AutoLatex from "../../components/AutoLatex";
-import { QuestionData, QuestionGradingResult, gradeQuestion, generateOverallComment } from "../../lib/grading";
+import { QuestionData, QuestionGradingResult, gradeQuestion, generateOverallComment } from "../../lib/grading-api";
 
 const questionTypeLabels: Record<string, string> = {
     single: "单选题",

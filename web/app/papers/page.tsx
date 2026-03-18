@@ -10,7 +10,7 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { usePapers } from "../papers-context";
 import QuestionItem from "../components/QuestionItem";
 import { useToast } from "../toast-context";
-import { load_paper_image } from "../lib/ocr";
+import { load_paper_image } from "../lib/ocr-api";
 
 
 function PaperDetailPageContent() {

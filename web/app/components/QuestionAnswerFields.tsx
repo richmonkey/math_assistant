@@ -5,7 +5,7 @@ import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { QuestionType } from "../papers-context";
 import LatexTextareaPreview from "./LatexTextareaPreview";
-import { performAnswerOcr } from "../lib/ocr";
+import { performAnswerOcr } from "../lib/ocr-api";
 
 const blankDelimiter = " | ";
 const choiceDelimiter = ",";
