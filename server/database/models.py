@@ -32,6 +32,7 @@ class UserRecord:
 class Question(BaseModel):
     id = AutoField(primary_key=True)
     paper_id = IntegerField()
+    session_id = CharField(max_length=64, null=True, default=None)
     type = CharField(
         max_length=16,
         choices=(
@@ -49,6 +50,7 @@ class Question(BaseModel):
 class QuestionRecord:
     id: int
     paper_id: int
+    session_id: str | None
     type: str
     prompt: str
     answer: str

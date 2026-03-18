@@ -264,6 +264,7 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "paper_id": "1",
+      "session_id": "session_3f9a2b1c",
       "type": "single",
       "prompt": "已知函数...",
       "answer": "A",
@@ -285,6 +286,7 @@ Authorization: Bearer <access_token>
 - `updated_at`: 试卷最近更新时间，ISO 8601 格式
 - `grading_result`: 试卷批改结果，未批改时为 `null`
 - `questions`: 题目列表，按 `id` 升序；每题的 `grading_result` 未批改时为 `null`
+- `questions[].session_id`: 与该题绑定的辅导会话 ID，未创建会话时为 `null`
 
 ### 失败响应
 

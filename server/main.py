@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 from peewee import IntegrityError
@@ -10,7 +11,7 @@ from database import close_database, init_database
 from database import User
 from paper_routes import router as paper_router
 from question_routes import router as question_router
-
+from agent_routers import router as agent_router
 from logger import init_logger
 
 
@@ -46,9 +47,20 @@ def ensure_default_user() -> None:
 
 
 app = FastAPI(title="Math Assistant Auth Service", lifespan=lifespan)
+
+
+# 允许跨域请求 (为了方便前端调用)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router, prefix="/v1")
 app.include_router(paper_router, prefix="/v1")
 app.include_router(question_router, prefix="/v1")
+app.include_router(agent_router, prefix="/v1")
 
 
 # print("hash:", hash_password("1"))

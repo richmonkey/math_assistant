@@ -102,6 +102,7 @@ class PaperGradingResultResponse(BaseModel):
 class QuestionDetailResponse(BaseModel):
     id: str
     paper_id: str
+    session_id: str | None = None
     type: QuestionType
     prompt: str
     answer: str

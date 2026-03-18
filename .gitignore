@@ -3,6 +3,7 @@ main/releases
 apiKey.txt
 .venv
 __pycache__
-app.db
 math.md
 config.py
+server/chat_sessions
+server/app.db

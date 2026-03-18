@@ -133,6 +133,7 @@ def get_paper(
         QuestionDetailResponse(
             id=str(q.id),
             paper_id=str(q.paper_id),
+            session_id=q.session_id,
             type=q.type,
             prompt=q.prompt,
             answer=q.answer,

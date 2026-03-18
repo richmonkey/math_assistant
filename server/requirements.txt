@@ -4,3 +4,6 @@ peewee
 python-jose
 passlib[bcrypt]
 bcrypt==4.0.1
+langchain==1.2.12
+langchain-openai==1.1.11
+langchain-community==0.4.1
