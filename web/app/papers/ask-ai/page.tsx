@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import AutoLatex from "../../components/AutoLatex";
+import MarkdownMessage from "../../components/MarkdownMessage";
 import LatexTextareaPreview from "../../components/LatexTextareaPreview";
 import { type Question, usePapers } from "../../papers-context";
 import {
@@ -186,7 +187,9 @@ function AskAiConversation({
                                 ? "max-w-[85%] rounded p-3 text-sm lg:max-w-[78%] bg-[var(--hover)]"
                                 : "w-full rounded p-3 text-sm"
                             }>
-                                <AutoLatex text={msg.content} />
+                                {msg.role === "user"
+                                    ? <AutoLatex text={msg.content} />
+                                    : <MarkdownMessage content={msg.content} />}
                             </div>
                         </div>
                     ))
