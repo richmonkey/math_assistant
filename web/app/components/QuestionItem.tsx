@@ -79,7 +79,7 @@ export default function QuestionItem({
                         />
                     )}
                     <Button
-                        label="答案"
+                        label="答题"
                         icon="pi pi-file-edit"
                         outlined
                         onClick={() => router.push(`/papers/edit-answer?paperId=${paperId}&questionId=${question.id}`)}
@@ -107,7 +107,7 @@ export default function QuestionItem({
             <AutoLatex className="mb-2 font-medium" text={question.prompt} />
             <AutoLatex
                 className="rounded bg-[var(--hover)] p-3 text-sm"
-                text={`答案：${formatAnswer(question.type, question.answer)}`}
+                text={`解：${formatAnswer(question.type, question.answer)}`}
             />
         </li>
     );

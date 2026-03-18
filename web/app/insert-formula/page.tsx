@@ -18,7 +18,7 @@ function InsertFormulaPageContent() {
     const searchParams = useSearchParams();
     const returnUrl = searchParams.get("returnUrl") ?? "";
 
-    const [formulaLatex, setFormulaLatex] = useState("x^2");
+    const [formulaLatex, setFormulaLatex] = useState("");
 
     const insertTemplate = (template: string) => {
         setFormulaLatex((prev) => `${prev}${template}`);

@@ -37,15 +37,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         }
     }, [isHydrated, router, shouldRedirectToHome, shouldRedirectToLogin]);
 
-    if (!isHydrated) {
-        return (
-            <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6 text-sm text-[var(--muted)]">
-                正在检查登录状态...
-            </main>
-        );
-    }
-
-    if (shouldRedirectToLogin || shouldRedirectToHome) {
+    if (!isHydrated || shouldRedirectToLogin || shouldRedirectToHome) {
         return (
             <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6 text-sm text-[var(--muted)]">
                 正在检查登录状态...

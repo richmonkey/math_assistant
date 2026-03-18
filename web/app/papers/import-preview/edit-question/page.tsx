@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
 import { Button } from "primereact/button";
+import LatexTextareaPreview from "../../../components/LatexTextareaPreview";
 
 type ImportQuestionType =
     | "multiple_choice"
@@ -120,12 +120,12 @@ function EditImportQuestionPageContent() {
                 </div>
             </div>
             <div>
-                <label className="mb-2 block text-sm text-[var(--foreground)]">题干</label>
-                <InputTextarea
+                <label className="mb-2 block text-sm text-[var(--foreground)]">题目内容</label>
+                <LatexTextareaPreview
                     value={draftContent}
-                    onChange={(e) => setDraftContent(e.target.value)}
-                    className="w-full"
+                    onChange={setDraftContent}
                     rows={6}
+                    showOcrButton={false}
                 />
             </div>
             <p className="text-sm text-[var(--muted)]">选择题选项不可编辑。</p>

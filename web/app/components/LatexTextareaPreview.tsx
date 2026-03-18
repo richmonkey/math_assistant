@@ -333,7 +333,7 @@ export default function LatexTextareaPreview({
                     icon="pi pi-calculator"
                     outlined
                     size="small"
-                    onClick={() => { setFormulaLatex("x^2"); setFormulaDialogVisible(true); }}
+                    onClick={() => { setFormulaLatex(""); setFormulaDialogVisible(true); }}
                 />
                 {showOcrButton && (
                     <>
