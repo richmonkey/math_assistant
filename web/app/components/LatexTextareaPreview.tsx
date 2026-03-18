@@ -18,6 +18,7 @@ type LatexTextareaPreviewProps = {
     autoFocus?: boolean;
     performOcr?: (file: File) => Promise<string>;
     showOcrButton?: boolean;
+    footerActions?: React.ReactNode;
 };
 
 const SYMBOL_OPTIONS = [
@@ -103,6 +104,7 @@ export default function LatexTextareaPreview({
     autoFocus = false,
     performOcr,
     showOcrButton = true,
+    footerActions,
 }: LatexTextareaPreviewProps) {
     const [formulaDialogVisible, setFormulaDialogVisible] = useState(false);
     const [formulaLatex, setFormulaLatex] = useState("");
@@ -336,12 +338,12 @@ export default function LatexTextareaPreview({
             <InputTextarea
                 value={value}
                 onChange={(event) => applyValue(event.target.value)}
-                className="w-full"
+                className="w-full rounded border border-[var(--surface-border)] bg-[var(--hover)] px-3 py-2"
                 rows={rows}
                 placeholder={placeholder}
                 autoFocus={autoFocus}
             />
-            <div className="mt-2 flex justify-end gap-2">
+            <div className="mt-2 flex items-center justify-end gap-2">
                 <Button
                     type="button"
                     label="插入公式"
@@ -378,6 +380,7 @@ export default function LatexTextareaPreview({
                         />
                     </>
                 )}
+                {footerActions}
             </div>
             <div className="mt-2 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
                 <p className="mb-2 text-xs text-[var(--muted)]">LaTeX 预览</p>

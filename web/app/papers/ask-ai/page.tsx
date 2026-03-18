@@ -180,45 +180,43 @@ function AskAiConversation({
                     messages.map((msg, index) => (
                         <div
                             key={`${msg.role}-${index}`}
-                            className={`rounded p-3 text-sm ${msg.role === "user"
-                                ? "ml-8 bg-[var(--hover)]"
-                                : "mr-8 border border-[var(--surface-border)]"
-                                }`}
+                            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                         >
-                            <p className="mb-1 text-xs text-[var(--muted)]">
-                                {msg.role === "user" ? "我" : "AI"}
-                            </p>
-                            <AutoLatex text={msg.content} />
+                            <div className={msg.role === "user"
+                                ? "max-w-[85%] rounded p-3 text-sm lg:max-w-[78%] bg-[var(--hover)]"
+                                : "w-full rounded p-3 text-sm"
+                            }>
+                                <AutoLatex text={msg.content} />
+                            </div>
                         </div>
                     ))
                 )}
                 {isSending && (
-                    <div className="mr-8 rounded border border-[var(--surface-border)] p-3 text-sm">
+                    <div className="flex justify-start"><div className="w-full rounded p-3 text-sm">
                         <p className="mb-2 text-xs text-[var(--muted)]">AI</p>
                         <div className="flex items-center gap-2">
                             <ProgressSpinner style={{ width: "20px", height: "20px" }} strokeWidth="6" />
                             <span className="text-[var(--muted)]">正在思考...</span>
                         </div>
-                    </div>
+                    </div></div>
                 )}
             </div>
 
-            <div className="flex items-end gap-2">
+            <div className="shrink-0">
                 <LatexTextareaPreview
                     value={input}
                     onChange={setInput}
                     rows={3}
                     placeholder={sessionId ? "输入你的问题，例如：这题第一步怎么做？" : "正在初始化会话，请稍候..."}
                     showOcrButton={false}
-                />
-                <Button
-                    label={isSending ? "发送中" : "发送"}
-                    icon="pi pi-send"
-                    className="shrink-0"
-                    onClick={() => {
-                        void handleSend();
-                    }}
-                    disabled={isInitializing || isSending || !sessionId || !input.trim()}
+                    footerActions={
+                        <Button
+                            label={isSending ? "发送中" : "发送"}
+                            icon="pi pi-send"
+                            onClick={() => { void handleSend(); }}
+                            disabled={isInitializing || isSending || !sessionId || !input.trim()}
+                        />
+                    }
                 />
             </div>
         </section>
@@ -267,7 +265,7 @@ function AskAiPageContent() {
     }
 
     return (
-        <main className="mx-auto flex h-screen max-w-3xl flex-col overflow-hidden p-6">
+        <main className="mx-auto flex h-screen max-w-6xl flex-col overflow-hidden px-4 py-6 sm:px-6">
             <div className="mb-6 flex shrink-0 items-center gap-3">
                 <Button
                     icon="pi pi-arrow-left"
