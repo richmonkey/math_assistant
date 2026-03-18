@@ -362,6 +362,8 @@ export default function LatexTextareaPreview({
                 <AutoCodeLatex className="min-h-8 text-sm" text={value || "请输入内容以预览"} />
             </div>
             <Dialog
+                //mathlive 的虚拟键盘默认的z-index是105，小于105保证虚拟键盘可以显示在dialog上方
+                baseZIndex={100}
                 visible={formulaDialogVisible}
                 onHide={() => setFormulaDialogVisible(false)}
                 style={{ width: "100vw", height: "100vh", maxHeight: "100vh", margin: 0, borderRadius: 0 }}

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
 import 'mathlive';
+import { applyHighSchoolMathKeyboard } from '../lib/math-keyboard';
 
 declare module "react/jsx-runtime" {
     namespace JSX {
@@ -33,7 +34,10 @@ const MathEditor = ({
 }: MathEditorProps) => {
     const mathfieldRef = useRef<MathfieldElement | null>(null);
 
-
+    // 注册高中数学虚拟键盘（仅在第一次挂载时执行）
+    useEffect(() => {
+        applyHighSchoolMathKeyboard();
+    }, []);
     useEffect(() => {
         const mathfield = mathfieldRef.current;
         if (!mathfield) return;
