@@ -5,7 +5,8 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputTextarea } from "primereact/inputtextarea";
 import { useToast } from "../toast-context";
-import { AutoCodeLatex } from "./AutoLatex";
+
+import AutoLatex, { AutoCodeLatex } from "./AutoLatex";
 import MathEditor from "./MathEditor";
 import OcrPreviewModal from "./OcrPreviewModal";
 
@@ -384,7 +385,7 @@ export default function LatexTextareaPreview({
             </div>
             <div className="mt-2 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-3">
                 <p className="mb-2 text-xs text-[var(--muted)]">LaTeX 预览</p>
-                <AutoCodeLatex className="min-h-8 text-sm" text={value || ""} />
+                <AutoLatex className="min-h-8 text-sm" text={value || ""} />
             </div>
             <Dialog
                 //mathlive 的虚拟键盘默认的z-index是105，小于105保证虚拟键盘可以显示在dialog上方

@@ -13,19 +13,19 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 import uuid
 from auth import get_current_user
 from database import Paper, Question, UserRecord
-from config import HISTORY_DIR
+from config import HISTORY_DIR, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL
 
 router = APIRouter()
 
 
 def get_api_key():
-    return "ollama"
+    return LLM_API_KEY
 
 
 llm = ChatOpenAI(
-    base_url="http://localhost:11434/v1",
+    base_url=LLM_BASE_URL,
     api_key=get_api_key,
-    model="qwen3-vl:8b-instruct",
+    model=LLM_MODEL,
 )
 
 
@@ -108,7 +108,6 @@ def create_session_history_file(session_id: str) -> bool:
     原子创建会话历史文件。
     返回 True 表示创建成功；返回 False 表示该 session_id 已存在。
     """
-    os.makedirs(HISTORY_DIR, exist_ok=True)
     file_path = os.path.join(HISTORY_DIR, f"{session_id}.json")
 
     # 先做一次显式存在性检查，便于快速跳过明显冲突的 ID。
