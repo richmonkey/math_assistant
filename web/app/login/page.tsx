@@ -10,8 +10,8 @@ import { saveAuthSession } from "../lib/auth";
 
 export default function LoginPage() {
     const router = useRouter();
-    const [username, setUsername] = useState("admin");
-    const [password, setPassword] = useState("123456");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
             <section className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--surface)] p-6 shadow-sm">
                 <h1 className="mb-1 text-2xl font-semibold">登录 Math Assistant</h1>
                 <p className="mb-6 text-sm text-[var(--muted)]">
-                    登录后即可管理试卷、题目与批改结果。
+                    登录后即可管理与批改试卷。
                 </p>
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
@@ -60,6 +60,7 @@ export default function LoginPage() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             autoComplete="username"
+                            className="w-full"
                         />
                     </div>
 
@@ -74,6 +75,15 @@ export default function LoginPage() {
                             feedback={false}
                             toggleMask
                             autoComplete="current-password"
+                            className="w-full"
+                            inputClassName="w-full"
+                            pt={{
+                                root: { className: 'w-full' },
+                                iconField: { className: 'w-full' },
+                                input: { className: 'w-full' },
+                                showIcon: { className: "top-1/2 -translate-y-1/2" },
+                                hideIcon: { className: "top-1/2 -translate-y-1/2" },
+                            }}
                         />
                     </div>
 

@@ -8,3 +8,4 @@ config.py
 server/chat_sessions
 server/app.db
 server/system_prompt.txt
+dist
