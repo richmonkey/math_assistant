@@ -13,7 +13,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 import uuid
 from auth import get_current_user
 from database import Paper, Question, UserRecord
-from config import HISTORY_DIR, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL
+from config import HISTORY_DIR, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL, LLM_TIMEOUT
 
 router = APIRouter()
 
@@ -26,6 +26,8 @@ llm = ChatOpenAI(
     base_url=LLM_BASE_URL,
     api_key=get_api_key,
     model=LLM_MODEL,
+    timeout=LLM_TIMEOUT,
+    temperature=0.3,
 )
 
 

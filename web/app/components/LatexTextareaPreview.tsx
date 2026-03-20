@@ -13,6 +13,7 @@ import OcrPreviewModal from "./OcrPreviewModal";
 type LatexTextareaPreviewProps = {
     value: string;
     onChange: (value: string) => void;
+    onKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
     rows?: number;
     className?: string;
     placeholder?: string;
@@ -99,6 +100,7 @@ const TEMPLATES = [
 export default function LatexTextareaPreview({
     value,
     onChange,
+    onKeyDown,
     rows = 3,
     className,
     placeholder,
@@ -339,6 +341,7 @@ export default function LatexTextareaPreview({
             <InputTextarea
                 value={value}
                 onChange={(event) => applyValue(event.target.value)}
+                onKeyDown={onKeyDown}
                 className="w-full rounded border border-[var(--surface-border)] bg-[var(--hover)] px-3 py-2"
                 rows={rows}
                 placeholder={placeholder}

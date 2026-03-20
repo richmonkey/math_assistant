@@ -136,6 +136,17 @@ export function clearAuthSession() {
     window.localStorage.removeItem("auth");
 }
 
+export function handleUnauthorizedResponse() {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    clearAuthSession();
+    if (window.location.pathname !== "/login") {
+        window.location.replace("/login");
+    }
+}
+
 export function saveAuthSession(payload: {
     access_token: string;
     token_type: string;

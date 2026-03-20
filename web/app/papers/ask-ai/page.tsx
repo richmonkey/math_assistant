@@ -209,6 +209,12 @@ function AskAiConversation({
                 <LatexTextareaPreview
                     value={input}
                     onChange={setInput}
+                    onKeyDown={(event) => {
+                        if (event.ctrlKey && event.key === "Enter") {
+                            event.preventDefault();
+                            void handleSend();
+                        }
+                    }}
                     rows={3}
                     placeholder={sessionId ? "输入你的问题，例如：这题第一步怎么做？" : "正在初始化会话，请稍候..."}
                     showOcrButton={false}
@@ -247,6 +253,7 @@ function AskAiPageContent() {
         () => paper?.questions.find((q) => q.id === questionId),
         [paper, questionId]
     );
+    const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
 
     if (!question) {
         return (
@@ -267,6 +274,9 @@ function AskAiPageContent() {
         );
     }
 
+    const isPromptLong = question.prompt.length > 120;
+    const isQuestionExpanded = expandedQuestions[question.id] ?? !isPromptLong;
+
     return (
         <main className="mx-auto flex h-screen max-w-6xl flex-col overflow-hidden px-4 py-6 sm:px-6">
             <div className="mb-6 flex shrink-0 items-center gap-3">
@@ -280,10 +290,35 @@ function AskAiPageContent() {
             </div>
 
             <section className="mb-4 shrink-0 rounded border border-[var(--surface-border)] bg-[var(--surface)] p-4">
-                <p className="mb-2 text-sm text-[var(--muted)]">
-                    题型：{questionTypeLabels[question.type]}
-                </p>
-                <AutoLatex className="font-medium" text={question.prompt} />
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm text-[var(--muted)]">
+                        题型：{questionTypeLabels[question.type]}
+                    </p>
+                    {isPromptLong && (
+                        <Button
+                            text
+                            size="small"
+                            onClick={() => {
+                                setExpandedQuestions((prev) => ({
+                                    ...prev,
+                                    [question.id]: !(prev[question.id] ?? !isPromptLong),
+                                }));
+                            }}
+                            label={isQuestionExpanded ? "收起题目" : "展开题目"}
+                            icon={isQuestionExpanded ? "pi pi-angle-up" : "pi pi-angle-down"}
+                            aria-expanded={isQuestionExpanded}
+                        />
+                    )}
+                </div>
+
+                <div className="relative">
+                    <div className={isQuestionExpanded ? "" : "max-h-20 overflow-hidden"}>
+                        <AutoLatex className="font-medium" text={question.prompt} />
+                    </div>
+                    {!isQuestionExpanded && isPromptLong && (
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[var(--surface)] to-transparent" />
+                    )}
+                </div>
             </section>
 
             <AskAiConversation key={`${paperId}:${question.id}`} paperId={paperId} question={question} />

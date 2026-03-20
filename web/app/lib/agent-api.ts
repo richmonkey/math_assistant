@@ -1,4 +1,4 @@
-import { API_BASE_URL, getStoredAccessToken } from "./auth";
+import { API_BASE_URL, getStoredAccessToken, handleUnauthorizedResponse } from "./auth";
 
 type AgentHistoryMessage = {
     role: "user" | "ai";
@@ -37,6 +37,11 @@ async function requestAgentApi<T>(path: string, init?: RequestInit): Promise<T> 
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            handleUnauthorizedResponse();
+            throw new Error("认证失败，请重新登录");
+        }
+
         let detail = "Request failed";
         try {
             const err = (await response.json()) as { detail?: string };
