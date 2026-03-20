@@ -1,33 +1,147 @@
 import os
 import re
 import logging
+from typing import Any
 from fastapi import HTTPException, APIRouter, Depends, status
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from peewee import DoesNotExist
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.chat_message_histories import FileChatMessageHistory
+from langchain_core.runnables import RunnableLambda
 from langchain_core.runnables.history import RunnableWithMessageHistory
 import uuid
 from auth import get_current_user
 from database import Paper, Question, UserRecord
-from config import HISTORY_DIR, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL, LLM_TIMEOUT
+from config import (
+    HISTORY_DIR,
+    LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_FALLBACK_PROVIDERS,
+    LLM_MODEL,
+    LLM_TIMEOUT,
+)
 
 router = APIRouter()
 
 
-def get_api_key():
-    return LLM_API_KEY
+def build_chat_llm(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    timeout: int,
+) -> ChatOpenAI:
+    return ChatOpenAI(
+        base_url=base_url,
+        api_key=SecretStr(api_key),
+        model=model,
+        timeout=timeout,
+        temperature=0.3,
+    )
 
 
-llm = ChatOpenAI(
-    base_url=LLM_BASE_URL,
-    api_key=get_api_key,
-    model=LLM_MODEL,
-    timeout=LLM_TIMEOUT,
-    temperature=0.3,
+def build_llm_providers() -> list[dict[str, Any]]:
+    providers = [
+        {
+            "name": "primary",
+            "base_url": LLM_BASE_URL,
+            "model": LLM_MODEL,
+            "timeout": LLM_TIMEOUT,
+            "llm": build_chat_llm(
+                base_url=LLM_BASE_URL,
+                api_key=LLM_API_KEY,
+                model=LLM_MODEL,
+                timeout=LLM_TIMEOUT,
+            ),
+        }
+    ]
+
+    for index, provider in enumerate(LLM_FALLBACK_PROVIDERS, start=1):
+        providers.append(
+            {
+                "name": provider.get("name", f"fallback_{index}"),
+                "base_url": provider["base_url"],
+                "model": provider["model"],
+                "timeout": provider.get("timeout", LLM_TIMEOUT),
+                "llm": build_chat_llm(
+                    base_url=provider["base_url"],
+                    api_key=provider["api_key"],
+                    model=provider["model"],
+                    timeout=provider.get("timeout", LLM_TIMEOUT),
+                ),
+            }
+        )
+
+    logging.info("Configured %s LLM provider(s)", len(providers))
+    return providers
+
+
+LLM_PROVIDERS = build_llm_providers()
+
+
+def log_llm_success(provider: dict[str, Any]) -> None:
+    logging.info(
+        "LLM call succeeded with provider=%s model=%s base_url=%s timeout=%s",
+        provider["name"],
+        provider["model"],
+        provider["base_url"],
+        provider["timeout"],
+    )
+
+
+def log_llm_failure(provider: dict[str, Any], error: Exception) -> None:
+    logging.warning(
+        "LLM call failed with provider=%s model=%s base_url=%s: %s",
+        provider["name"],
+        provider["model"],
+        provider["base_url"],
+        error,
+    )
+
+
+def invoke_llm_with_fallbacks(prompt_value, config=None):
+    last_error = None
+
+    for provider in LLM_PROVIDERS:
+        try:
+            response = provider["llm"].invoke(prompt_value, config=config)
+            log_llm_success(provider)
+            return response
+        except Exception as error:
+            last_error = error
+            log_llm_failure(provider, error)
+
+    if last_error is not None:
+        raise last_error
+
+    raise RuntimeError("No LLM providers configured")
+
+
+async def ainvoke_llm_with_fallbacks(prompt_value, config=None):
+    last_error = None
+
+    for provider in LLM_PROVIDERS:
+        try:
+            response = await provider["llm"].ainvoke(prompt_value, config=config)
+            log_llm_success(provider)
+            return response
+        except Exception as error:
+            last_error = error
+            log_llm_failure(provider, error)
+
+    if last_error is not None:
+        raise last_error
+
+    raise RuntimeError("No LLM providers configured")
+
+
+llm = RunnableLambda(
+    invoke_llm_with_fallbacks,
+    afunc=ainvoke_llm_with_fallbacks,
+    name="llm_with_fallbacks",
 )
 
 
