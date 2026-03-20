@@ -57,3 +57,9 @@ body {
 .ML__keyboard {
     z-index: 10000;
 }
+
+/* PrimeReact Password component full width */
+
+.p-password .p-icon-field {
+    width: 100%;
+}
