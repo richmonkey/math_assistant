@@ -13,16 +13,38 @@ HISTORY_DIR = "./chat_sessions"
 
 
 # LLM configuration
-LLM_BASE_URL = "http://localhost:11434/v1"
-LLM_API_KEY = "ollama"
-LLM_MODEL = "qwen3-vl:8b-instruct"
-LLM_TIMEOUT = 120
-LLM_FALLBACK_PROVIDERS = [
+LLM_PROVIDERS = [
+	{
+		"name": "ollama",
+		"base_url": "http://localhost:11434/v1",
+		"api_key": "ollama",
+		"model": "qwen3-vl:8b-instruct",
+		"openai_proxy": None,
+		"timeout": 120,
+	},
 	# {
 	#     "name": "deepseek-backup",
 	#     "base_url": "https://api.deepseek.com",
 	#     "api_key": "your-backup-api-key",
 	#     "model": "deepseek-chat",
+	#     "openai_proxy": None,
 	#     "timeout": 120,
 	# },
 ]
+
+# Compatibility aliases for modules still importing single-provider settings.
+PRIMARY_LLM_PROVIDER = LLM_PROVIDERS[0]
+LLM_NAME = PRIMARY_LLM_PROVIDER["name"]
+LLM_BASE_URL = PRIMARY_LLM_PROVIDER["base_url"]
+LLM_API_KEY = PRIMARY_LLM_PROVIDER["api_key"]
+LLM_MODEL = PRIMARY_LLM_PROVIDER["model"]
+LLM_OPENAI_PROXY = PRIMARY_LLM_PROVIDER.get("openai_proxy")
+LLM_TIMEOUT = PRIMARY_LLM_PROVIDER.get("timeout")
+
+# Compatibility alias for previous fallback config style.
+LLM_FALLBACK_PROVIDERS = LLM_PROVIDERS[1:]
+LLM_PROVIDER_ORDER_BY_CALLER = {
+	# "admin": ["primary", "deepseek-backup"],
+	# "student_a": ["deepseek-backup", "primary"],
+	# "*": ["primary"],
+}

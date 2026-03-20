@@ -6,12 +6,18 @@ from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 from pydantic import BaseModel, Field
 
 from auth import get_current_user
-from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
+from config import LLM_PROVIDERS
+
+# from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
 from database import UserRecord
 
-
 router = APIRouter()
-openai_client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+
+LLM_API_KEY = LLM_PROVIDERS[0]["api_key"]
+LLM_BASE_URL = LLM_PROVIDERS[0]["base_url"]
+LLM_MODEL = LLM_PROVIDERS[0]["model"]
+LLM_TIMEOUT = LLM_PROVIDERS[0].get("timeout", None)
+openai_client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL, timeout=LLM_TIMEOUT)
 
 
 class QuestionData(BaseModel):

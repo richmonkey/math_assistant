@@ -17,11 +17,8 @@ from auth import get_current_user
 from database import Paper, Question, UserRecord
 from config import (
     HISTORY_DIR,
-    LLM_API_KEY,
-    LLM_BASE_URL,
-    LLM_FALLBACK_PROVIDERS,
-    LLM_MODEL,
-    LLM_TIMEOUT,
+    LLM_PROVIDERS,
+    LLM_PROVIDER_ORDER_BY_CALLER,
 )
 
 router = APIRouter()
@@ -32,11 +29,13 @@ def build_chat_llm(
     base_url: str,
     api_key: str,
     model: str,
-    timeout: int,
+    timeout: int | None,
+    openai_proxy: str | None = None,
 ) -> ChatOpenAI:
     return ChatOpenAI(
         base_url=base_url,
         api_key=SecretStr(api_key),
+        openai_proxy=openai_proxy,
         model=model,
         timeout=timeout,
         temperature=0.3,
@@ -44,33 +43,21 @@ def build_chat_llm(
 
 
 def build_llm_providers() -> list[dict[str, Any]]:
-    providers = [
-        {
-            "name": "primary",
-            "base_url": LLM_BASE_URL,
-            "model": LLM_MODEL,
-            "timeout": LLM_TIMEOUT,
-            "llm": build_chat_llm(
-                base_url=LLM_BASE_URL,
-                api_key=LLM_API_KEY,
-                model=LLM_MODEL,
-                timeout=LLM_TIMEOUT,
-            ),
-        }
-    ]
+    providers = []
 
-    for index, provider in enumerate(LLM_FALLBACK_PROVIDERS, start=1):
+    for index, provider in enumerate(LLM_PROVIDERS):
         providers.append(
             {
-                "name": provider.get("name", f"fallback_{index}"),
+                "name": provider["name"],
                 "base_url": provider["base_url"],
                 "model": provider["model"],
-                "timeout": provider.get("timeout", LLM_TIMEOUT),
+                "timeout": provider.get("timeout", None),
                 "llm": build_chat_llm(
                     base_url=provider["base_url"],
                     api_key=provider["api_key"],
                     model=provider["model"],
-                    timeout=provider.get("timeout", LLM_TIMEOUT),
+                    timeout=provider.get("timeout", None),
+                    openai_proxy=provider.get("openai_proxy", None),
                 ),
             }
         )
@@ -79,7 +66,59 @@ def build_llm_providers() -> list[dict[str, Any]]:
     return providers
 
 
-LLM_PROVIDERS = build_llm_providers()
+RUNTIME_LLM_PROVIDERS = build_llm_providers()
+LLM_PROVIDER_BY_NAME = {
+    provider["name"]: provider for provider in RUNTIME_LLM_PROVIDERS
+}
+if RUNTIME_LLM_PROVIDERS:
+    LLM_PROVIDER_BY_NAME.setdefault("primary", RUNTIME_LLM_PROVIDERS[0])
+
+
+def _ordered_provider_names_for_caller(caller: str | None) -> list[str] | None:
+    if not caller:
+        return None
+
+    provider_names = LLM_PROVIDER_ORDER_BY_CALLER.get(caller)
+    if provider_names is None:
+        provider_names = LLM_PROVIDER_ORDER_BY_CALLER.get("*")
+    return provider_names
+
+
+def get_ordered_providers(caller: str | None) -> list[dict[str, Any]]:
+    preferred_names = _ordered_provider_names_for_caller(caller)
+    if not preferred_names:
+        return RUNTIME_LLM_PROVIDERS
+
+    ordered = []
+    used = set()
+    for name in preferred_names:
+        provider = LLM_PROVIDER_BY_NAME.get(name)
+        if provider is None:
+            logging.warning(
+                "Unknown provider name '%s' in LLM_PROVIDER_ORDER_BY_CALLER for caller=%s",
+                name,
+                caller,
+            )
+            continue
+        ordered.append(provider)
+        used.add(name)
+
+    logging.info(
+        "Resolved provider order for caller=%s -> %s",
+        caller,
+        [p["name"] for p in ordered],
+    )
+    return ordered
+
+
+def _extract_caller(config: Any) -> str | None:
+    if not isinstance(config, dict):
+        return None
+    configurable = config.get("configurable")
+    if not isinstance(configurable, dict):
+        return None
+    caller = configurable.get("llm_caller")
+    return caller if isinstance(caller, str) and caller else None
 
 
 def log_llm_success(provider: dict[str, Any]) -> None:
@@ -104,8 +143,9 @@ def log_llm_failure(provider: dict[str, Any], error: Exception) -> None:
 
 def invoke_llm_with_fallbacks(prompt_value, config=None):
     last_error = None
+    caller = _extract_caller(config)
 
-    for provider in LLM_PROVIDERS:
+    for provider in get_ordered_providers(caller):
         try:
             response = provider["llm"].invoke(prompt_value, config=config)
             log_llm_success(provider)
@@ -122,8 +162,9 @@ def invoke_llm_with_fallbacks(prompt_value, config=None):
 
 async def ainvoke_llm_with_fallbacks(prompt_value, config=None):
     last_error = None
+    caller = _extract_caller(config)
 
-    for provider in LLM_PROVIDERS:
+    for provider in get_ordered_providers(caller):
         try:
             response = await provider["llm"].ainvoke(prompt_value, config=config)
             log_llm_success(provider)
@@ -324,7 +365,12 @@ async def create_session_endpoint(
                     "input": first_user_message,
                     "problem_content": question.prompt,
                 },
-                config={"configurable": {"session_id": new_session_id}},
+                config={
+                    "configurable": {
+                        "session_id": new_session_id,
+                        "llm_caller": current_user.username,
+                    }
+                },
             )
 
             return {
@@ -373,7 +419,12 @@ async def chat_endpoint(
                 "input": request.message,
                 "problem_content": question.prompt,
             },
-            config={"configurable": {"session_id": request.session_id}},
+            config={
+                "configurable": {
+                    "session_id": request.session_id,
+                    "llm_caller": current_user.username,
+                }
+            },
         )
         logging.info("Generated reply for session %s: %s", request.session_id, response)
         return ChatResponse(session_id=request.session_id, reply=response)
