@@ -1,4 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.exception_handlers import (
+    http_exception_handler,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -68,6 +72,20 @@ app.include_router(agent_router, prefix="/v1")
 # app.include_router(openai_router, prefix="/v1")
 app.include_router(ocr_router, prefix="/v1")
 app.include_router(grading_router, prefix="/v1")
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request, exc):
+    logging.error("OMG! An HTTP error!:%s", "".join(traceback.format_exception(exc)))
+    return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(Exception)
+async def custom_exception_handler(request, exc):
+    logging.error("OMG! An error!:%s", "".join(traceback.format_exception(exc)))
+    return JSONResponse(
+        status_code=500, content={"detail": "Internal server error", "error": str(exc)}
+    )
 
 
 # print("hash:", hash_password("1"))

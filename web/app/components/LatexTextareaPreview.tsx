@@ -97,6 +97,109 @@ const TEMPLATES = [
     { label: "对数换底", latex: "\\log_a b=\\frac{\\ln b}{\\ln a}" },
 ];
 
+const LATEX_COMMAND_SUGGESTIONS = [
+    "\\alpha",
+    "\\beta",
+    "\\gamma",
+    "\\delta",
+    "\\epsilon",
+    "\\varepsilon",
+    "\\theta",
+    "\\lambda",
+    "\\mu",
+    "\\pi",
+    "\\rho",
+    "\\sigma",
+    "\\phi",
+    "\\varphi",
+    "\\omega",
+    "\\Delta",
+    "\\Theta",
+    "\\Lambda",
+    "\\Sigma",
+    "\\Omega",
+    "\\sqrt",
+    "\\frac",
+    "\\sum",
+    "\\prod",
+    "\\lim",
+    "\\sin",
+    "\\cos",
+    "\\tan",
+    "\\log",
+    "\\ln",
+    "\\infty",
+    "\\partial",
+    "\\therefore",
+    "\\because",
+    "\\begin{cases}",
+    "\\left(",
+    "\\right)",
+    "\\left[",
+    "\\right]",
+    "\\left\\{",
+    "\\right\\}",
+];
+
+function getTextareaCaretPosition(textarea: HTMLTextAreaElement, cursor: number): { top: number; left: number } {
+    const safeCursor = Math.max(0, Math.min(cursor, textarea.value.length));
+    const computed = window.getComputedStyle(textarea);
+    const mirror = document.createElement("div");
+
+    mirror.style.position = "absolute";
+    mirror.style.visibility = "hidden";
+    mirror.style.pointerEvents = "none";
+    mirror.style.whiteSpace = "pre-wrap";
+    mirror.style.wordBreak = "break-word";
+    mirror.style.overflowWrap = "break-word";
+    mirror.style.left = "-9999px";
+    mirror.style.top = "0";
+    mirror.style.width = `${textarea.clientWidth}px`;
+
+    const styleProps = [
+        "boxSizing",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "fontStyle",
+        "letterSpacing",
+        "lineHeight",
+        "textTransform",
+        "textIndent",
+        "textDecoration",
+        "paddingTop",
+        "paddingRight",
+        "paddingBottom",
+        "paddingLeft",
+        "borderTopWidth",
+        "borderRightWidth",
+        "borderBottomWidth",
+        "borderLeftWidth",
+        "borderTopStyle",
+        "borderRightStyle",
+        "borderBottomStyle",
+        "borderLeftStyle",
+    ] as const;
+
+    for (const prop of styleProps) {
+        mirror.style[prop] = computed[prop];
+    }
+
+    mirror.textContent = textarea.value.slice(0, safeCursor);
+
+    const marker = document.createElement("span");
+    marker.textContent = textarea.value.slice(safeCursor) || "\u200b";
+    mirror.appendChild(marker);
+    document.body.appendChild(mirror);
+
+    const top = marker.offsetTop - textarea.scrollTop;
+    const left = marker.offsetLeft - textarea.scrollLeft;
+
+    document.body.removeChild(mirror);
+
+    return { top, left };
+}
+
 export default function LatexTextareaPreview({
     value,
     onChange,
@@ -126,6 +229,10 @@ export default function LatexTextareaPreview({
     const [selectedSymbol, setSelectedSymbol] = useState("");
     const [selectedGreek, setSelectedGreek] = useState("");
     const formulaInsertRangeRef = useRef({ start: 0, end: 0 });
+    const [commandSuggestions, setCommandSuggestions] = useState<string[]>([]);
+    const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+    const [commandReplaceRange, setCommandReplaceRange] = useState<{ start: number; end: number } | null>(null);
+    const [suggestionAnchor, setSuggestionAnchor] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
     const syncHistoryButtons = useCallback(() => {
         setCanUndo(undoStackRef.current.length > 0);
@@ -185,6 +292,69 @@ export default function LatexTextareaPreview({
         },
         [getTextarea, insertAtRange, value],
     );
+
+    const clearCommandSuggestions = useCallback(() => {
+        setCommandSuggestions([]);
+        setActiveSuggestionIndex(0);
+        setCommandReplaceRange(null);
+    }, []);
+
+    const updateCommandSuggestions = useCallback((
+        text: string,
+        cursor: number,
+        textarea?: HTMLTextAreaElement | null,
+    ) => {
+        const safeCursor = Math.max(0, Math.min(cursor, text.length));
+        const beforeCursor = text.slice(0, safeCursor);
+        const commandMatch = beforeCursor.match(/\\[a-zA-Z]+$/);
+
+        if (!commandMatch) {
+            clearCommandSuggestions();
+            return;
+        }
+
+        const typedCommand = commandMatch[0];
+        if (typedCommand.length < 3) {
+            clearCommandSuggestions();
+            return;
+        }
+
+        const matched = LATEX_COMMAND_SUGGESTIONS
+            .filter((command) => command.startsWith(typedCommand) && command !== typedCommand)
+            .slice(0, 8);
+
+        if (matched.length === 0) {
+            clearCommandSuggestions();
+            return;
+        }
+
+        setCommandSuggestions(matched);
+        setActiveSuggestionIndex(0);
+        setCommandReplaceRange({
+            start: safeCursor - typedCommand.length,
+            end: safeCursor,
+        });
+
+        if (textarea) {
+            const caret = getTextareaCaretPosition(textarea, safeCursor);
+            const lineHeight = Number.parseFloat(window.getComputedStyle(textarea).lineHeight || "20") || 20;
+            console.log("line height:", lineHeight);
+            setSuggestionAnchor({
+                top: textarea.offsetTop + caret.top + lineHeight,
+                left: textarea.offsetLeft + caret.left,
+            });
+        }
+    }, [clearCommandSuggestions]);
+
+    const applyCommandSuggestion = useCallback((command: string) => {
+        if (!commandReplaceRange) return;
+
+        const nextValue = `${value.slice(0, commandReplaceRange.start)}${command} ${value.slice(commandReplaceRange.end)}`;
+        const nextCursor = commandReplaceRange.start + command.length + 1;
+        applyValue(nextValue);
+        clearCommandSuggestions();
+        focusTextareaAt(nextCursor);
+    }, [applyValue, clearCommandSuggestions, commandReplaceRange, focusTextareaAt, value]);
 
     const undo = useCallback(() => {
         const previous = undoStackRef.current.pop();
@@ -276,7 +446,7 @@ export default function LatexTextareaPreview({
     }, [applyValue, clearPreviewState, pendingOcrFile, showError, value]);
 
     return (
-        <div className={`flex-1 ${className ?? ""}`} ref={containerRef}>
+        <div className={`relative flex-1 ${className ?? ""}`} ref={containerRef}>
             <OcrPreviewModal
                 isOpen={isPreviewOpen}
                 previewUrl={previewUrl}
@@ -340,13 +510,82 @@ export default function LatexTextareaPreview({
             </div>
             <InputTextarea
                 value={value}
-                onChange={(event) => applyValue(event.target.value)}
-                onKeyDown={onKeyDown}
+                onChange={(event) => {
+                    const nextValue = event.target.value;
+                    const cursor = event.target.selectionStart ?? nextValue.length;
+                    applyValue(nextValue);
+                    updateCommandSuggestions(nextValue, cursor, event.target);
+                }}
+                onClick={(event) => {
+                    const target = event.target as HTMLTextAreaElement;
+                    const cursor = target.selectionStart ?? value.length;
+                    updateCommandSuggestions(value, cursor, target);
+                }}
+                onKeyDown={(event) => {
+                    if (commandSuggestions.length > 0) {
+                        if (event.key === "ArrowDown") {
+                            event.preventDefault();
+                            setActiveSuggestionIndex((prev) =>
+                                prev + 1 >= commandSuggestions.length ? 0 : prev + 1
+                            );
+                            return;
+                        }
+
+                        if (event.key === "ArrowUp") {
+                            event.preventDefault();
+                            setActiveSuggestionIndex((prev) =>
+                                prev - 1 < 0 ? commandSuggestions.length - 1 : prev - 1
+                            );
+                            return;
+                        }
+
+                        if (event.key === "Enter" || event.key === "Tab") {
+                            event.preventDefault();
+                            applyCommandSuggestion(commandSuggestions[activeSuggestionIndex]);
+                            return;
+                        }
+
+                        if (event.key === "Escape") {
+                            event.preventDefault();
+                            clearCommandSuggestions();
+                            return;
+                        }
+                    }
+
+                    onKeyDown?.(event);
+                }}
+                onBlur={() => {
+                    setTimeout(() => clearCommandSuggestions(), 100);
+                }}
                 className="w-full rounded border border-[var(--surface-border)] bg-[var(--hover)] px-3 py-2"
                 rows={rows}
                 placeholder={placeholder}
                 autoFocus={autoFocus}
             />
+            {commandSuggestions.length > 0 && (
+                <div
+                    className="absolute z-20 max-h-44 min-w-36 overflow-y-auto rounded border border-[var(--surface-border)] bg-[var(--surface)] p-1 shadow-sm"
+                    style={{
+                        top: suggestionAnchor.top,
+                        left: suggestionAnchor.left,
+                    }}
+                >
+                    {commandSuggestions.map((command, index) => (
+                        <button
+                            key={command}
+                            type="button"
+                            className={`block w-full rounded px-2 py-1 text-left text-xs ${index === activeSuggestionIndex ? "bg-[var(--hover)]" : ""
+                                }`}
+                            onMouseDown={(event) => {
+                                event.preventDefault();
+                                applyCommandSuggestion(command);
+                            }}
+                        >
+                            {command}
+                        </button>
+                    ))}
+                </div>
+            )}
             <div className="mt-2 flex items-center justify-end gap-2">
                 <Button
                     type="button"
