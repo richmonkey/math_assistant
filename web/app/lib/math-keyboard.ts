@@ -114,7 +114,7 @@ const mathAdvancedLayout: Layout = {
                     { latex: 'a_{#0}', label: 'aₙ' },
                     { latex: 'S_{#0}', label: 'Sₙ' },
                     { latex: 'T_{#0}', label: 'Tₙ' },
-                    { latex: 'q^{#0}', label: 'qⁿ' },
+                    { latex: '\\begin{cases} #0 \\\\ #0 \\end{cases}', label: 'cases' },
                     { latex: '\\lim_{#0 \\to #0} #0', label: 'lim' },
                 ],
                 // ── Row 3: 逻辑 / 推导 ──
@@ -160,5 +160,5 @@ export function applyHighSchoolMathKeyboard(): void {
     if (!kbd) return;
 
     // 第一个 tab 会作为默认打开的 tab
-    kbd.layouts = [mathBasicLayout, mathAdvancedLayout, 'numeric'];
+    kbd.layouts = [mathBasicLayout, mathAdvancedLayout, 'numeric', 'symbols', 'greek', 'alphabetic'];
 }

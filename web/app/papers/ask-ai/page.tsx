@@ -210,7 +210,20 @@ function AskAiConversation({
                     value={input}
                     onChange={setInput}
                     onKeyDown={(event) => {
-                        if (event.ctrlKey && event.key === "Enter") {
+                        if (event.key !== "Enter") {
+                            return;
+                        }
+
+                        const isComposing = event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229;
+                        if (isComposing) {
+                            return;
+                        }
+
+                        if (event.shiftKey) {
+                            return;
+                        }
+
+                        if (!event.repeat) {
                             event.preventDefault();
                             void handleSend();
                         }

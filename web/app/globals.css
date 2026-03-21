@@ -54,12 +54,11 @@ body {
     border-top: 1px solid var(--surface-border) !important;
 }
 
-.ML__keyboard {
-    z-index: 10000;
+:root {
+    --keyboard-zindex: 3000;
 }
 
 /* PrimeReact Password component full width */
-
 .p-password .p-icon-field {
     width: 100%;
 }
