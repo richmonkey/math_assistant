@@ -27,8 +27,8 @@ export default function Home() {
                 <h1 className="text-2xl font-semibold">试卷管理系统</h1>
                 <div className="flex items-center gap-2">
                     <Button
-                        label={theme === "dark" ? "浅色主题" : "深色主题"}
-                        icon={theme === "dark" ? "pi pi-sun" : "pi pi-moon"}
+                        label={theme === "dark" ? "浅色主题" : theme === "light" ? "护眼主题" : "深色主题"}
+                        icon={theme === "dark" ? "pi pi-sun" : theme === "light" ? "pi pi-leaf" : "pi pi-moon"}
                         severity="secondary"
                         outlined
                         onClick={handleToggleTheme}

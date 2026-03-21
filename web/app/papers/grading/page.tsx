@@ -225,8 +225,8 @@ function GradingPageContent() {
 
                     {/* 题目批改详情 */}
                     {!isGrading && (
-                        <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-                            <h2 className="mb-4 text-lg font-semibold">批改详情</h2>
+                        <section className="rounded border-[var(--surface-border)] bg-[var(--surface)] border-0 p-0 md:border md:p-5">
+                            <h2 className="p-2 text-lg font-semibold">批改详情</h2>
 
                             {paper.questions.length === 0 ? (
                                 <p className="text-sm text-[var(--muted)]">暂无题目。</p>

@@ -106,7 +106,7 @@ function PaperDetailPageContent() {
     };
 
     return (
-        <main className="mx-auto max-w-3xl p-6">
+        <main className="mx-auto max-w-3xl border-0 p-1 md:border md:p-6">
             {isImporting && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                     <div className="rounded-lg bg-[var(--surface)] p-6 text-center shadow-lg">
@@ -178,10 +178,10 @@ function PaperDetailPageContent() {
                         </Link>
                     </div>
 
-                    <section className="rounded border border-[var(--surface-border)] bg-[var(--surface)] p-5">
-                        <div className="mb-4 flex items-center justify-between">
+                    <section className="rounded border-[var(--surface-border)] bg-[var(--surface)] border-0 p-0 md:border md:p-5">
+                        <div className="flex items-center justify-between border-[var(--surface-border)] border-0 p-4">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-lg font-semibold">题目列表</h2>
+                                {/* <h2 className="text-lg font-semibold">题目列表</h2> */}
                                 <span className="text-sm text-[var(--muted)]">共 {paper.questions.length} 题</span>
                             </div>
                             <div className="flex items-center gap-2">

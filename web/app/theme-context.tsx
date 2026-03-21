@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-type Theme = "dark" | "light";
+type Theme = "dark" | "light" | "apple-green";
 
 type ThemeContextValue = {
     theme: Theme;
@@ -17,13 +17,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const savedTheme = window.localStorage.getItem("theme");
-        if (savedTheme === "light" || savedTheme === "dark") {
+        if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "apple-green") {
             setTheme(savedTheme);
         }
     }, []);
 
     useEffect(() => {
-        document.documentElement.classList.toggle("light", theme === "light");
+        document.documentElement.classList.remove("light", "apple-green");
+        if (theme === "light" || theme === "apple-green") {
+            document.documentElement.classList.add(theme);
+        }
         window.localStorage.setItem("theme", theme);
     }, [theme]);
 
@@ -31,7 +34,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         () => ({
             theme,
             setTheme,
-            toggleTheme: () => setTheme((current) => (current === "dark" ? "light" : "dark")),
+            toggleTheme: () => setTheme((current) => {
+                if (current === "dark") return "light";
+                if (current === "light") return "apple-green";
+                return "dark";
+            }),
         }),
         [theme]
     );

@@ -18,6 +18,15 @@ html.light {
     --hover: #f4f4f5;
 }
 
+html.apple-green {
+    --background: #f0f8f0;
+    --foreground: #2c3e50;
+    --surface: #f8fff8;
+    --surface-border: #d4e6d4;
+    --muted: #6c7a89;
+    --hover: #e6f3e6;
+}
+
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
