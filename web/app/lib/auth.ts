@@ -1,7 +1,8 @@
-export const API_BASE_URL =
-    process.env.NEXT_PUBLIC_MATH_ASSISTANT_API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "/v1";
-// "http://127.0.0.1:8000";
+// export const API_BASE_URL =
+//     process.env.NEXT_PUBLIC_MATH_ASSISTANT_API_BASE_URL ??
+//     process.env.NEXT_PUBLIC_API_BASE_URL ?? "/v1";
+// // "http://127.0.0.1:8000";
+export const API_BASE_URL ="https://math.xigua.online/v1"
 
 export const AUTH_STORAGE_KEY = "math_assistant_auth";
 

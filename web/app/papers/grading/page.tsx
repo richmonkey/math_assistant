@@ -127,7 +127,7 @@ function GradingPageContent() {
 
 
     return (
-        <main className="mx-auto max-w-3xl p-6">
+        <main className="mx-auto max-w-3xl border-0 p-1 md:border md:p-6">
             {!paper ? (
                 <>
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">

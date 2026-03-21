@@ -28,7 +28,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                     <Button
                         label={theme === "dark" ? "浅色主题" : theme === "light" ? "护眼主题" : "深色主题"}
-                        icon={theme === "dark" ? "pi pi-sun" : theme === "light" ? "pi pi-leaf" : "pi pi-moon"}
+                        icon={theme === "dark" ? "pi pi-sun" : theme === "light" ? "pi pi-eye" : "pi pi-moon"}
                         severity="secondary"
                         outlined
                         onClick={handleToggleTheme}
