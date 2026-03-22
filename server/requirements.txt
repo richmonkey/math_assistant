@@ -9,3 +9,4 @@ langchain==1.2.12
 langchain-openai==1.1.11
 langchain-community==0.4.1
 openai>=1.0.0
+sympy>=1.13.0
