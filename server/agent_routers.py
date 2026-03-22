@@ -6,14 +6,14 @@ from peewee import DoesNotExist
 from pydantic import BaseModel
 
 from agent_service import (
-    MAX_SESSION_ID_GENERATION_ATTEMPTS,
     create_session_history_file,
     get_session_history,
-    parse_int_id,
     run_agent_with_history,
 )
 from auth import get_current_user
 from database import Paper, Question, UserRecord
+
+MAX_SESSION_ID_GENERATION_ATTEMPTS = 10
 
 router = APIRouter()
 
@@ -38,6 +38,16 @@ class SessionCreateRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     reply: str
+
+
+def parse_int_id(value: str, field_name: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{field_name} must be an integer string",
+        )
 
 
 async def create_session_for_question(

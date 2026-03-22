@@ -14,7 +14,6 @@ from agent_tools import MATH_TOOLS
 from config import HISTORY_DIR, LLM_PROVIDERS, LLM_PROVIDER_ORDER_BY_CALLER
 
 MAX_AGENT_ITERATIONS = 6
-MAX_SESSION_ID_GENERATION_ATTEMPTS = 10
 
 
 system_prompt_template = """# Role
@@ -186,16 +185,6 @@ def create_session_history_file(session_id: str) -> bool:
         return True
     except FileExistsError:
         return False
-
-
-def parse_int_id(value: str, field_name: str) -> int:
-    try:
-        return int(value)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"{field_name} must be an integer string",
-        )
 
 
 async def run_agent_with_history(
