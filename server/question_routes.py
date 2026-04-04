@@ -45,6 +45,7 @@ def create_question(
         type=payload.type,
         prompt=payload.prompt,
         answer=payload.answer,
+        reference_image_url=payload.reference_image_url,
     )
     return QuestionResponse(
         id=str(question.id),
@@ -52,6 +53,7 @@ def create_question(
         type=question.type,
         prompt=question.prompt,
         answer=question.answer,
+        reference_image_url=question.reference_image_url,
     )
 
 
@@ -90,6 +92,7 @@ def update_question(
             type=payload.type,
             prompt=payload.prompt,
             answer=payload.answer,
+            reference_image_url=payload.reference_image_url,
         )
         .where(
             (Question.id == question_id_int) & (Question.paper_id.in_(owned_paper_ids))
@@ -109,6 +112,7 @@ def update_question(
         type=question.type,
         prompt=question.prompt,
         answer=question.answer,
+        reference_image_url=question.reference_image_url,
     )
 
 

@@ -53,6 +53,7 @@ type Question = {
     type: QuestionType;
     prompt: string;
     answer: string;
+    referenceImageUrl?: string;
     noteId?: string;
     sessionId?: string;
     gradingResult?: QuestionGradingResult;
@@ -93,6 +94,7 @@ function mapServerQuestion(question: ServerQuestionResponse): Question {
         type: question.type,
         prompt: question.prompt,
         answer: question.answer,
+        referenceImageUrl: question.reference_image_url ?? undefined,
         sessionId: question.session_id,
     };
 }
@@ -245,6 +247,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
                 type: input.type,
                 prompt: input.prompt,
                 answer: input.answer ?? "",
+                referenceImageUrl: input.referenceImageUrl,
             });
             const serverQuestion = mapServerQuestion(created);
             setPapers((current) =>
@@ -271,6 +274,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
             type: update.type,
             prompt: update.prompt,
             answer: update.answer ?? "",
+            referenceImageUrl: update.referenceImageUrl,
         });
 
         setPapers((current) =>
@@ -285,6 +289,10 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
                                     type: update.type,
                                     prompt: update.prompt,
                                     answer: update.answer ?? question.answer,
+                                    referenceImageUrl:
+                                        update.referenceImageUrl === undefined
+                                            ? question.referenceImageUrl
+                                            : update.referenceImageUrl ?? undefined,
                                 }
                                 : question
                         ),
@@ -452,6 +460,7 @@ export function PapersProvider({ children }: { children: React.ReactNode }) {
                     type: input.type,
                     prompt: input.prompt,
                     answer: input.answer ?? "",
+                    referenceImageUrl: input.referenceImageUrl,
                 });
                 createdQuestions.push(question);
             }
@@ -509,12 +518,14 @@ type QuestionInput = {
     type: QuestionType;
     prompt: string;
     answer?: string;
+    referenceImageUrl?: string | null;
 };
 
 type ImportQuestionInput = {
     type: QuestionType;
     prompt: string;
     answer?: string;
+    referenceImageUrl?: string | null;
 };
 
 export type {

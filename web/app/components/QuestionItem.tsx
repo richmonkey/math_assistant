@@ -116,6 +116,15 @@ export default function QuestionItem({
                 </div>
             </div>
             <AutoLatex className="mb-2 font-medium" text={question.prompt} />
+            {question.referenceImageUrl && (
+                <div className="mb-2">
+                    <img
+                        src={question.referenceImageUrl}
+                        alt="题目参考图片"
+                        className="max-h-48 max-w-full object-scale-down"
+                    />
+                </div>
+            )}
             <AutoLatex
                 className="rounded bg-[var(--hover)] p-3 text-sm"
                 text={`解：${formatAnswer(question.type, question.answer)}`}

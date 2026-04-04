@@ -137,6 +137,7 @@ def get_paper(
             type=q.type,
             prompt=q.prompt,
             answer=q.answer,
+            reference_image_url=q.reference_image_url,
             grading_result=(
                 QuestionGradingResultResponse(
                     id=str(grading_results_by_question[q.id].id),
@@ -188,6 +189,7 @@ def list_paper_questions(
             type=question.type,
             prompt=question.prompt,
             answer=question.answer,
+            reference_image_url=question.reference_image_url,
         )
         for question in questions
     ]

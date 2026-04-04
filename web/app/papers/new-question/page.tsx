@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { QuestionType, usePapers } from "../../papers-context";
 import QuestionPromptField from "../../components/QuestionPromptField";
+import ReferenceImageField from "../../components/ReferenceImageField";
 
 function NewQuestionPageContent() {
     const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ function NewQuestionPageContent() {
 
     const [questionType, setQuestionType] = useState<QuestionType>("single");
     const [questionPrompt, setQuestionPrompt] = useState("");
+    const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
     const [error, setError] = useState("");
 
     const returnToPaperDetail = () => {
@@ -32,6 +34,7 @@ function NewQuestionPageContent() {
             await addQuestion(paperId, {
                 type: questionType,
                 prompt: trimmedPrompt,
+                referenceImageUrl,
             });
             returnToPaperDetail();
         } catch (error) {
@@ -82,6 +85,10 @@ function NewQuestionPageContent() {
                     value={questionPrompt}
                     onChange={setQuestionPrompt}
                     isDialogOpen={true}
+                />
+                <ReferenceImageField
+                    value={referenceImageUrl}
+                    onChange={setReferenceImageUrl}
                 />
                 {error && <p className="text-sm text-red-400">{error}</p>}
                 <div className="flex justify-end gap-2">

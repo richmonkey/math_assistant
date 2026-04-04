@@ -13,6 +13,7 @@ export type ServerQuestionResponse = {
     type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
+    reference_image_url?: string | null;
     session_id?: string;
 };
 
@@ -45,6 +46,10 @@ export type ServerPaperDetailResponse = {
             grading_result?: ServerQuestionGradingResultResponse | null;
         }
     >;
+};
+
+export type UploadImageResponse = {
+    url: string;
 };
 
 async function requestApi<T>(path: string, init?: RequestInit): Promise<T> {
@@ -113,6 +118,7 @@ export function createQuestion(payload: {
     type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
+    referenceImageUrl?: string | null;
 }) {
     return requestApi<ServerQuestionResponse>("/questions", {
         method: "POST",
@@ -121,6 +127,7 @@ export function createQuestion(payload: {
             type: payload.type,
             prompt: payload.prompt,
             answer: payload.answer,
+            reference_image_url: payload.referenceImageUrl ?? null,
         }),
     });
 }
@@ -130,6 +137,7 @@ export function updateQuestionApi(payload: {
     type: "single" | "multiple" | "blank" | "judge" | "free";
     prompt: string;
     answer: string;
+    referenceImageUrl?: string | null;
 }) {
     return requestApi<ServerQuestionResponse>(
         `/questions/${encodeURIComponent(payload.questionId)}`,
@@ -139,9 +147,48 @@ export function updateQuestionApi(payload: {
                 type: payload.type,
                 prompt: payload.prompt,
                 answer: payload.answer,
+                reference_image_url: payload.referenceImageUrl ?? null,
             }),
         }
     );
+}
+
+export async function uploadQuestionReferenceImage(file: File) {
+    const accessToken = getStoredAccessToken();
+    if (!accessToken) {
+        throw new Error("Missing access token");
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(`${API_BASE_URL}/images/upload`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            handleUnauthorizedResponse();
+            throw new Error("认证失败，请重新登录");
+        }
+
+        let detail = "Upload failed";
+        try {
+            const err = (await response.json()) as { detail?: string };
+            if (err.detail) {
+                detail = err.detail;
+            }
+        } catch {
+            // Ignore parse failures and keep fallback detail.
+        }
+        throw new Error(detail);
+    }
+
+    return (await response.json()) as UploadImageResponse;
 }
 
 export function deleteQuestionApi(questionId: string) {

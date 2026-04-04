@@ -119,6 +119,45 @@ Authorization: Bearer <access_token>
 
 - `Authorization: Bearer <access_token>`
 
+---
+
+## 3. 上传图片
+
+### `POST /images/upload`
+
+上传图片到服务端本地目录，并返回图片可访问 URL。
+
+### 请求头
+
+- `Authorization: Bearer <access_token>`
+- `Content-Type: multipart/form-data`
+
+### 表单字段
+
+- `image`: 图片文件，必填
+
+### 成功响应
+
+- `200 OK`
+
+```json
+{
+  "url": "http://127.0.0.1:8000/uploads/7a0d8b4e3e1f4d1d8a7f0d2e4c8b1a23.png"
+}
+```
+
+### 失败响应
+
+- `400 Bad Request`
+
+```json
+{
+  "detail": "Uploaded file must be an image"
+}
+```
+
+- `401 Unauthorized`
+
 ### 请求体
 
 ```json
@@ -363,7 +402,8 @@ Authorization: Bearer <access_token>
     "paper_id": "1",
     "type": "single",
     "prompt": "已知函数...",
-    "answer": "A"
+    "answer": "A",
+    "reference_image_url": "https://example.com/reference/question-1.png"
   }
 ]
 ```
@@ -398,7 +438,8 @@ Authorization: Bearer <access_token>
   "paper_id": "1",
   "type": "single",
   "prompt": "函数 f(x) 在 x=0 处的导数是...",
-  "answer": "B"
+  "answer": "B",
+  "reference_image_url": "https://example.com/reference/question-1.png"
 }
 ```
 
@@ -408,6 +449,7 @@ Authorization: Bearer <access_token>
 - `type`: `single | multiple | blank | judge | free`
 - `prompt`: string
 - `answer`: string
+- `reference_image_url`: string | null，可选
 
 ### 成功响应
 
@@ -419,7 +461,8 @@ Authorization: Bearer <access_token>
   "paper_id": "1",
   "type": "single",
   "prompt": "函数 f(x) 在 x=0 处的导数是...",
-  "answer": "B"
+  "answer": "B",
+  "reference_image_url": "https://example.com/reference/question-1.png"
 }
 ```
 
@@ -472,7 +515,8 @@ Authorization: Bearer <access_token>
   "paper_id": "1",
   "type": "free",
   "prompt": "证明：若 a>b>0，则...",
-  "answer": "略"
+  "answer": "略",
+  "reference_image_url": "https://example.com/reference/question-1.png"
 }
 ```
 

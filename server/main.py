@@ -4,18 +4,26 @@ from fastapi.exception_handlers import (
     http_exception_handler,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from pathlib import Path
 import logging
 from peewee import IntegrityError
 import traceback
 from auth import hash_password
 from auth_routes import router as auth_router
-from config import DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_USERNAME
+from config import (
+    DEFAULT_ADMIN_PASSWORD,
+    DEFAULT_ADMIN_USERNAME,
+    UPLOAD_IMAGE_DIR,
+    UPLOAD_IMAGE_URL_PREFIX,
+)
 from database import close_database, init_database
 from database import User
 from paper_routes import router as paper_router
 from question_routes import router as question_router
 from agent_routers import router as agent_router
+from image_routes import router as image_router
 
 # from openai_routes import router as openai_router
 from ocr_routes import router as ocr_router
@@ -55,6 +63,12 @@ def ensure_default_user() -> None:
 
 
 app = FastAPI(title="Math Assistant Auth Service", lifespan=lifespan)
+Path(UPLOAD_IMAGE_DIR).mkdir(parents=True, exist_ok=True)
+app.mount(
+    UPLOAD_IMAGE_URL_PREFIX,
+    StaticFiles(directory=UPLOAD_IMAGE_DIR),
+    name="uploaded-images",
+)
 
 
 # 允许跨域请求 (为了方便前端调用)
@@ -69,6 +83,7 @@ app.include_router(auth_router, prefix="/v1")
 app.include_router(paper_router, prefix="/v1")
 app.include_router(question_router, prefix="/v1")
 app.include_router(agent_router, prefix="/v1")
+app.include_router(image_router, prefix="/v1")
 # app.include_router(openai_router, prefix="/v1")
 app.include_router(ocr_router, prefix="/v1")
 app.include_router(grading_router, prefix="/v1")

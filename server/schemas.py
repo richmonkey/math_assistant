@@ -24,6 +24,10 @@ class EchoResponse(BaseModel):
     user: str
 
 
+class UploadImageResponse(BaseModel):
+    url: str
+
+
 class CreatePaperRequest(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
@@ -49,12 +53,14 @@ class CreateQuestionRequest(BaseModel):
     type: QuestionType
     prompt: str = Field()
     answer: str = Field()
+    reference_image_url: str | None = None
 
 
 class UpdateQuestionRequest(BaseModel):
     type: QuestionType
     prompt: str = Field()
     answer: str = Field()
+    reference_image_url: str | None = None
 
 
 class QuestionResponse(BaseModel):
@@ -63,6 +69,7 @@ class QuestionResponse(BaseModel):
     type: QuestionType
     prompt: str
     answer: str
+    reference_image_url: str | None = None
 
 
 class DeleteQuestionResponse(BaseModel):
@@ -106,6 +113,7 @@ class QuestionDetailResponse(BaseModel):
     type: QuestionType
     prompt: str
     answer: str
+    reference_image_url: str | None = None
     grading_result: QuestionGradingResultResponse | None = None
 
 

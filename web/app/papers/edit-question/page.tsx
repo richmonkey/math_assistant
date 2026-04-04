@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { QuestionType, usePapers } from "../../papers-context";
 import QuestionPromptField from "../../components/QuestionPromptField";
+import ReferenceImageField from "../../components/ReferenceImageField";
 
 function EditQuestionPageContent() {
     const searchParams = useSearchParams();
@@ -20,9 +21,16 @@ function EditQuestionPageContent() {
 
     const [questionType, setQuestionType] = useState<QuestionType>(question?.type ?? "free");
     const [questionPrompt, setQuestionPrompt] = useState(question?.prompt ?? "");
+    const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(
+        question?.referenceImageUrl ?? null
+    );
     const [error, setError] = useState("");
 
     const handleSave = async () => {
+        if (!question) {
+            return;
+        }
+
         const trimmedPrompt = questionPrompt.trim();
         if (!trimmedPrompt) {
             setError("请填写题目内容");
@@ -32,6 +40,8 @@ function EditQuestionPageContent() {
             await updateQuestion(paperId, questionId, {
                 type: questionType,
                 prompt: trimmedPrompt,
+                answer: question.answer,
+                referenceImageUrl,
             });
             router.back();
         } catch (err) {
@@ -83,6 +93,10 @@ function EditQuestionPageContent() {
                     onChange={setQuestionPrompt}
                     isDialogOpen={true}
                     autoFocus
+                />
+                <ReferenceImageField
+                    value={referenceImageUrl}
+                    onChange={setReferenceImageUrl}
                 />
                 {error && <p className="text-sm text-red-400">{error}</p>}
                 <div className="flex justify-end gap-2">

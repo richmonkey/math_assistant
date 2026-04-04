@@ -45,6 +45,7 @@ class Question(BaseModel):
     )
     prompt = TextField()
     answer = TextField()
+    reference_image_url = TextField(null=True, default=None)
 
 
 class QuestionRecord:
@@ -54,6 +55,7 @@ class QuestionRecord:
     type: str
     prompt: str
     answer: str
+    reference_image_url: str | None
 
 
 class Paper(BaseModel):

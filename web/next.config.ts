@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
             {
                 source: '/v1/:path*',
                 destination: 'http://localhost:8000/v1/:path*' // Proxy to Backend
+            },
+            {
+                source: '/images/:path*',
+                destination: 'http://localhost:8000/images/:path*' // Proxy static images
             }
         ]
     }
