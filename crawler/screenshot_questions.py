@@ -98,6 +98,7 @@ async def process_page_html(browser: Browser, html_content: str, output_dir: str
             body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }}
             .tk-quest-item {{ background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
             img {{ vertical-align: middle; }}
+            .exam-item__cnt {{ padding: 24px 12px 24px 12px; }}
             .right-msg, .ques-op {{ display: none !important; }}
         </style>
     </head>
