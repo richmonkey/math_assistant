@@ -129,6 +129,7 @@ class BankQuestion(BaseModel):
     content_image_url = TextField(null=True, default=None)
     external_url = TextField(null=True, default=None)
     has_image = BooleanField(default=False)
+    is_published = BooleanField(default=False)
 
 
 class BankQuestionRecord:
@@ -141,3 +142,4 @@ class BankQuestionRecord:
     content_image_url: str | None
     external_url: str | None
     has_image: bool
+    is_published: bool

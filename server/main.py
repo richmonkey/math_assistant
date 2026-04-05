@@ -22,6 +22,7 @@ from database import close_database, init_database
 from database import User
 from paper_routes import router as paper_router
 from question_routes import router as question_router
+from bank_question_routes import router as bank_question_router
 from agent_routers import router as agent_router
 from image_routes import router as image_router
 
@@ -82,6 +83,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/v1")
 app.include_router(paper_router, prefix="/v1")
 app.include_router(question_router, prefix="/v1")
+app.include_router(bank_question_router, prefix="/v1")
 app.include_router(agent_router, prefix="/v1")
 app.include_router(image_router, prefix="/v1")
 # app.include_router(openai_router, prefix="/v1")

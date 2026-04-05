@@ -8,6 +8,7 @@ from .models import (
     User,
     UserRecord,
     BankQuestion,
+    BankQuestionRecord,
 )
 from .db import db
 import logging

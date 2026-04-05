@@ -125,3 +125,23 @@ class PaperDetailResponse(BaseModel):
     updated_at: datetime
     grading_result: PaperGradingResultResponse | None = None
     questions: list[QuestionDetailResponse] = []
+
+
+class UpdateBankQuestionRequest(BaseModel):
+    prompt: str
+    answer: str
+    type: QuestionType | None = None
+    reference_image_url: str | None = None
+
+
+class BankQuestionResponse(BaseModel):
+    id: str
+    type: QuestionType
+    prompt: str
+    answer: str
+    standard_answer_image_url: str | None = None
+    reference_image_url: str | None = None
+    content_image_url: str | None = None
+    external_url: str | None = None
+    has_image: bool
+    is_published: bool

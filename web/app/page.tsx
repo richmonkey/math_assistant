@@ -26,6 +26,14 @@ export default function Home() {
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-semibold">试卷管理系统</h1>
                 <div className="flex items-center gap-2">
+                    <Link href="/bank-questions">
+                        <Button
+                            label="题库管理"
+                            icon="pi pi-database"
+                            severity="secondary"
+                            outlined
+                        />
+                    </Link>
                     <Button
                         label={theme === "dark" ? "浅色主题" : "深色主题"}
                         icon={theme === "dark" ? "pi pi-sun" : "pi pi-moon"}
