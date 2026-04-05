@@ -7,6 +7,7 @@ from .models import (
     QuestionRecord,
     User,
     UserRecord,
+    BankQuestion,
 )
 from .db import db
 import logging
@@ -24,7 +25,7 @@ def init_database() -> None:
     if not version:
         logging.info("create new database")
         if not Question.table_exists():
-            db.create_tables([User, Paper, Question, QuestionGradingResult, PaperGradingResult])
+            db.create_tables([User, Paper, Question, BankQuestion, QuestionGradingResult, PaperGradingResult])
             db.pragma("user_version", VERSION)
             version = VERSION
         else:

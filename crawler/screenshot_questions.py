@@ -140,7 +140,7 @@ async def process_page_html(browser: Browser, html_content: str, output_dir: str
                 "knowledge_points": knowledge_points,
                 "content_screenshot": file_path,
                 "detail_url": detail_url,
-                "answer_screenshots": "",
+                "answer_screenshot": "",
             })
 
         print(f"  本页共提取 {len(questions)} 道题目。")
@@ -185,7 +185,7 @@ async def main(category_id: str, total_pages: int, start_page: int = 1):
             if not q["detail_url"]:
                 continue
             res = await fetch_answer(client, q["question_id"], q["detail_url"], output_dir, sem)
-            q["answer_screenshots"] = res
+            q["answer_screenshot"] = res
             await asyncio.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
 
         run_suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -203,7 +203,7 @@ async def retry_missing_answers(json_path: str) -> None:
         questions: list = json.load(f)
 
     output_dir = os.path.dirname(json_path)
-    missing = [q for q in questions if not q.get("answer_screenshots") and q.get("detail_url")]
+    missing = [q for q in questions if not q.get("answer_screenshot") and q.get("detail_url")]
     print(f"共 {len(questions)} 道题目，其中 {len(missing)} 道缺少答案，开始重新抓取...")
 
     if not missing:
@@ -214,7 +214,7 @@ async def retry_missing_answers(json_path: str) -> None:
         sem = asyncio.Semaphore(ANSWER_CONCURRENCY)
         for q in missing:
             res = await fetch_answer(client, q["question_id"], q["detail_url"], output_dir, sem)
-            q["answer_screenshots"] = res
+            q["answer_screenshot"] = res
             await asyncio.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
 
     with open(json_path, "w", encoding="utf-8") as f:

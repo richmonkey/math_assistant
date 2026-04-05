@@ -45,6 +45,7 @@ class Question(BaseModel):
     )
     prompt = TextField()
     answer = TextField()
+    standard_answer_image_url = TextField(null=True, default=None)
     reference_image_url = TextField(null=True, default=None)
 
 
@@ -55,6 +56,7 @@ class QuestionRecord:
     type: str
     prompt: str
     answer: str
+    standard_answer_image_url: str | None
     reference_image_url: str | None
 
 
@@ -106,3 +108,36 @@ class PaperGradingResultRecord:
     comment: str
     score: int
     max_score: int
+
+
+class BankQuestion(BaseModel):
+    id = AutoField(primary_key=True)
+    type = CharField(
+        max_length=16,
+        choices=(
+            ("single", "single"),
+            ("multiple", "multiple"),
+            ("blank", "blank"),
+            ("judge", "judge"),
+            ("free", "free"),
+        ),
+    )
+    prompt = TextField()
+    answer = TextField()
+    standard_answer_image_url = TextField(null=True, default=None)
+    reference_image_url = TextField(null=True, default=None)
+    content_image_url = TextField(null=True, default=None)
+    external_url = TextField(null=True, default=None)
+    has_image = BooleanField(default=False)
+
+
+class BankQuestionRecord:
+    id: int
+    type: str
+    prompt: str
+    answer: str
+    standard_answer_image_url: str | None
+    reference_image_url: str | None
+    content_image_url: str | None
+    external_url: str | None
+    has_image: bool
