@@ -7,7 +7,7 @@ import mimetypes
 import sys
 from pathlib import Path
 from uuid import uuid4
-
+import io
 from PIL import Image
 
 from config import UPLOAD_IMAGE_DIR, UPLOAD_IMAGE_URL_PREFIX
@@ -73,7 +73,6 @@ async def _ocr_image_file(image_path: Path) -> tuple[str, bool]:
 
 
 def _image_to_png_bytes(img: Image.Image) -> bytes:
-    import io
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
@@ -109,6 +108,9 @@ async def main() -> int:
         detail_url = item.get("detail_url")
         raw_content_screenshot = item.get("content_screenshot")
         raw_answer_screenshot = item.get("answer_screenshot")
+        difficulty = item.get("difficulty")
+        raw_knowledge_points = item.get("knowledge_points", [])
+        knowledge_points = ",".join(raw_knowledge_points) if raw_knowledge_points else ""
         raw_type = item.get("type", "")
         qtype = map_type(raw_type)
 
@@ -178,6 +180,8 @@ async def main() -> int:
             external_url=detail_url,
             content_image_url=content_image_url,
             has_image=has_image,
+            difficulty=difficulty,
+            knowledge_points=knowledge_points,
         )
         inserted += 1
         print(f"[{inserted}] Inserted question {item.get('question_id', '')}")

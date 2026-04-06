@@ -36,6 +36,8 @@ def create_bank_question(
         content_image_url=payload.content_image_url,
         external_url=payload.external_url,
         has_image=payload.has_image,
+        difficulty=payload.difficulty,
+        knowledge_points=payload.knowledge_points,
     )
     return BankQuestionResponse(
         id=str(q.id),
@@ -48,6 +50,8 @@ def create_bank_question(
         external_url=q.external_url,
         has_image=q.has_image,
         is_published=q.is_published,
+        difficulty=q.difficulty,
+        knowledge_points=q.knowledge_points,
     )
 
 
@@ -76,6 +80,8 @@ def list_bank_questions(
             external_url=q.external_url,
             has_image=q.has_image,
             is_published=q.is_published,
+            difficulty=q.difficulty,
+            knowledge_points=q.knowledge_points,
         )
         for q in query
     ]
@@ -98,6 +104,8 @@ def update_bank_question(
         prompt=payload.prompt,
         answer=payload.answer,
         reference_image_url=payload.reference_image_url,
+        difficulty=payload.difficulty,
+        knowledge_points=payload.knowledge_points,
     )
     if payload.type is not None:
         update_fields["type"] = payload.type
@@ -123,6 +131,8 @@ def update_bank_question(
         external_url=q.external_url,
         has_image=q.has_image,
         is_published=q.is_published,
+        difficulty=q.difficulty,
+        knowledge_points=q.knowledge_points,
     )
 
 
@@ -160,4 +170,6 @@ def publish_bank_question(
         external_url=q.external_url,
         has_image=q.has_image,
         is_published=q.is_published,
+        difficulty=q.difficulty,
+        knowledge_points=q.knowledge_points,
     )

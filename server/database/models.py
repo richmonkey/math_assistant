@@ -130,6 +130,8 @@ class BankQuestion(BaseModel):
     external_url = TextField(null=True, default=None, unique=True)
     has_image = BooleanField(default=False)
     is_published = BooleanField(default=False)
+    difficulty = CharField(max_length=32, null=True, default=None)
+    knowledge_points = TextField(null=True, default=None)
 
 
 class BankQuestionRecord:
@@ -143,3 +145,6 @@ class BankQuestionRecord:
     external_url: str | None
     has_image: bool
     is_published: bool
+    difficulty: str | None
+    knowledge_points: str | None
+

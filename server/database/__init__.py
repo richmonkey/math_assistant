@@ -18,6 +18,8 @@ VERSION = 2
 
 def upgrade_v1_to_v2():
    db.execute_sql("ALTER TABLE question ADD COLUMN reference_image_url TEXT DEFAULT NULL")    
+   db.execute_sql("ALTER TABLE question ADD COLUMN standard_answer_image_url TEXT DEFAULT NULL")    
+   db.create_tables([BankQuestion])
 
 def init_database() -> None:
     db.connect(reuse_if_open=True)
@@ -30,6 +32,7 @@ def init_database() -> None:
             db.pragma("user_version", VERSION)
             version = VERSION
         else:
+            db.pragma("user_version", 1)
             version = 1
             logging.warning(
                 "Database version is unknown, but 'question' table exists. Assuming version 1."

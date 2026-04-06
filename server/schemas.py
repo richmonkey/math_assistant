@@ -136,6 +136,8 @@ class CreateBankQuestionRequest(BaseModel):
     content_image_url: str | None = None
     external_url: str | None = None
     has_image: bool = False
+    difficulty: str | None = None
+    knowledge_points: str | None = None
 
 
 class UpdateBankQuestionRequest(BaseModel):
@@ -143,6 +145,8 @@ class UpdateBankQuestionRequest(BaseModel):
     answer: str
     type: QuestionType | None = None
     reference_image_url: str | None = None
+    difficulty: str | None = None
+    knowledge_points: str | None = None
 
 
 class BankQuestionResponse(BaseModel):
@@ -156,3 +160,5 @@ class BankQuestionResponse(BaseModel):
     external_url: str | None = None
     has_image: bool
     is_published: bool
+    difficulty: str | None = None
+    knowledge_points: str | None = None
