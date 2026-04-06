@@ -74,8 +74,8 @@ async def fetch_answer(client: PersistentBrowserClient, q_id: str, detail_url: s
             await detail_page.close()
 
 
-async def fetch_page_html(client: PersistentBrowserClient, category_id: str, page: int) -> str:
-    """请求单页题目列表，返回 HTML 字符串。"""
+async def fetch_page_html(client: PersistentBrowserClient, category_id: str, page: int) -> tuple[str, int | None]:
+    """请求单页题目列表，返回 HTML 字符串和总数。"""
     payload: Dict[str, str | float | bool] = {
         "pageName": "zsd",
         "bankId": "11",
@@ -85,7 +85,7 @@ async def fetch_page_html(client: PersistentBrowserClient, category_id: str, pag
     }
     response = await client.post("/zujuan-api/question/list", form=payload)
     data = response.get("data", {})
-    return data.get("data", {}).get("html", "")
+    return data.get("data", {}).get("html", ""), data.get("data", {}).get("total", None)
 
 
 async def process_page_html(browser: Browser, html_content: str, output_dir: str, index_offset: int) -> list:
@@ -151,12 +151,7 @@ async def process_page_html(browser: Browser, html_content: str, output_dir: str
         await context.close()
 
 
-async def main(category_id: str, total_pages: int, start_page: int = 1):
-    # 创建一个存放截图的目录
-    output_dir = "question_screenshots"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
+async def fetch(output_dir:str, category_id: str, total_pages: int, start_page: int = 1, fetch_answers: bool = True):
     async with PersistentBrowserClient(headless=False) as client:
         browser = await client.playwright.chromium.launch(headless=True)
 
@@ -164,7 +159,7 @@ async def main(category_id: str, total_pages: int, start_page: int = 1):
         for page_num in range(start_page, start_page + total_pages):
             print(f"\n--- 第 {page_num} 页（{page_num - start_page + 1}/{total_pages}）---")
             print(f"1. 正在请求第 {page_num} 页题目...")
-            html = await fetch_page_html(client, category_id, page_num)
+            html, total_counts = await fetch_page_html(client, category_id, page_num)
             if not html:
                 print(f"   ⚠️  第 {page_num} 页未获取到内容，结束请求")
                 break
@@ -172,31 +167,90 @@ async def main(category_id: str, total_pages: int, start_page: int = 1):
             questions = await process_page_html(browser, html, output_dir, len(parsed_questions))
             parsed_questions.extend(questions)
 
+            if total_counts is not None and len(parsed_questions) >= total_counts:
+                print(f"   已获取全部题目。")
+                break
+
         await browser.close()
 
         if not parsed_questions:
             print("未获取到任何题目。")
-            return
+            return None
 
         # 并发抓取所有题目的答案页
-        print(f"\n3. 开始并发获取答案（并发数={ANSWER_CONCURRENCY}）...")
-        sem = asyncio.Semaphore(ANSWER_CONCURRENCY)
+        if fetch_answers:
+            print(f"\n3. 开始并发获取答案（并发数={ANSWER_CONCURRENCY}）...")
+            sem = asyncio.Semaphore(ANSWER_CONCURRENCY)
 
-        for q in parsed_questions:
-            if not q["detail_url"]:
+            for q in parsed_questions:
+                if not q["detail_url"]:
+                    continue
+                res = await fetch_answer(client, q["question_id"], q["detail_url"], output_dir, sem)
+                if not res:
+                    print(f"  ⚠️  未获取到答案 q_{q['question_id']}，可能需要人工干预")
+                    break
+                q["answer_screenshot"] = res
+                await asyncio.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
+        else:
+            print("\n3. 跳过答案获取。")
+
+      
+        await browser.close()
+        
+        print("\n✅ 所有题目截图任务完成！")
+        return parsed_questions
+
+def get_leaf_nodes(node: dict) -> list:
+    """递归取出所有没有 children 的叶节点。"""
+    children = node.get("children", [])
+    if not children:
+        return [node]
+    result = []
+    for child in children:
+        result.extend(get_leaf_nodes(child))
+    return result
+
+async def fetch_main(category_id: str|None, category_json: str|None, total_pages: int, start_page: int = 1, fetch_answers: bool = True):
+    # 创建一个存放截图的目录
+    output_dir = "question_screenshots"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_json_dir = os.path.join(output_dir, "json")
+    if not os.path.exists(output_json_dir):
+        os.makedirs(output_json_dir)
+
+    if category_json:
+        with open(category_json, encoding="utf-8") as f:
+            data = json.load(f)
+
+        roots = data if isinstance(data, list) else [data]
+        leaf_nodes = []
+        for root in roots:
+            leaf_nodes.extend(get_leaf_nodes(root))
+
+        print(f"共找到 {len(leaf_nodes)} 个叶节点分类")
+        for node in leaf_nodes:
+            print(f"  [{node['id']}] {node.get('title', '')}")
+            output_json = os.path.join(output_json_dir, f"questions_{node['id']}.json")
+            if os.path.exists(output_json):
+                print(f"  ⚠️  已存在 {output_json}，跳过该分类")
                 continue
-            res = await fetch_answer(client, q["question_id"], q["detail_url"], output_dir, sem)
-            q["answer_screenshot"] = res
-            await asyncio.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
-
+            questions = await fetch(output_dir, node["id"], total_pages, start_page, fetch_answers)
+            parsed_questions = questions or []
+            with open(output_json, "w", encoding="utf-8") as f:
+                json.dump(parsed_questions, f, ensure_ascii=False, indent=2)
+            print(f"\n📄 题目元数据已保存 -> {output_json}")
+            
+    elif category_id:
+        questions = await fetch(output_dir, category_id, total_pages, start_page, fetch_answers)
+        parsed_questions = questions or []
         run_suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_json = os.path.join(output_dir, f"questions_{category_id}_{run_suffix}.json")
+        output_json = os.path.join(output_json_dir, f"questions_{category_id}_{run_suffix}.json")
         with open(output_json, "w", encoding="utf-8") as f:
             json.dump(parsed_questions, f, ensure_ascii=False, indent=2)
+
         print(f"\n📄 题目元数据已保存 -> {output_json}")
-            
-        await browser.close()
-        print("\n✅ 所有题目截图任务完成！")
+
 
 async def retry_missing_answers(json_path: str) -> None:
     """读取 fetch 生成的 JSON，对未获取到答案的题目重新抓取。"""
@@ -215,6 +269,9 @@ async def retry_missing_answers(json_path: str) -> None:
         sem = asyncio.Semaphore(ANSWER_CONCURRENCY)
         for q in missing:
             res = await fetch_answer(client, q["question_id"], q["detail_url"], output_dir, sem)
+            if not res:
+                print(f"  ⚠️  未获取到答案 q_{q['question_id']}，可能需要人工干预")
+                break
             q["answer_screenshot"] = res
             await asyncio.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
 
@@ -223,17 +280,30 @@ async def retry_missing_answers(json_path: str) -> None:
     print(f"\n📄 已更新 -> {json_path}")
     print("\n✅ 重试完成！")
 
+async def retry_main(json_path: str|None, json_dir: str|None):
+    if json_path:
+        await retry_missing_answers(json_path)
+    elif json_dir:
+        for filename in os.listdir(json_dir):
+            if filename.endswith(".json"):
+                path = os.path.join(json_dir, filename)
+                print(f"\n🔄 处理文件 {path}...")
+                await retry_missing_answers(path)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="抓取题库题目截图及答案")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     fetch_parser = subparsers.add_parser("fetch", help="抓取题目截图及答案")
-    fetch_parser.add_argument("--category-id", required=True, help="知识点分类 ID")
+    fetch_parser.add_argument("--category-id",  help="知识点分类 ID")
+    fetch_parser.add_argument("--category-json", help="知识点分类 JSON 文件路径")
     fetch_parser.add_argument("--pages", type=int, default=1, help="请求总页数（默认：1）")
     fetch_parser.add_argument("--start-page", type=int, default=1, help="起始页码（默认：1）")
+    fetch_parser.add_argument("--no-answers", action="store_true", help="跳过答案获取（默认：获取答案）")
 
     retry_parser = subparsers.add_parser("retry", help="重新抓取 JSON 中缺少答案的题目")
-    retry_parser.add_argument("--json", required=True, dest="json_path", help="fetch 生成的 JSON 文件路径")
+    retry_parser.add_argument("--json",  dest="json_path", help="fetch 生成的 JSON 文件路径")
+    retry_parser.add_argument("--json-dir",  dest="json_dir", help="fetch 生成的 JSON 文件目录路径")
 
     subparsers.add_parser("login", help="打开浏览器验证登录状态")
 
@@ -242,6 +312,12 @@ if __name__ == "__main__":
     if args.command == "login":
         asyncio.run(login())
     elif args.command == "fetch":
-        asyncio.run(main(args.category_id, args.pages, start_page=args.start_page))
+        if not args.category_id and not args.category_json:
+            print("请提供 --category-id 或 --category-json 参数")
+            sys.exit(1)
+        asyncio.run(fetch_main(args.category_id, args.category_json, args.pages, start_page=args.start_page, fetch_answers=not args.no_answers))
     elif args.command == "retry":
-        asyncio.run(retry_missing_answers(args.json_path))
+        if not args.json_path and not args.json_dir:
+            print("请提供 --json 或 --json-dir 参数")
+            sys.exit(1)
+        asyncio.run(retry_main(args.json_path, args.json_dir))
