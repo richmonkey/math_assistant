@@ -127,6 +127,17 @@ class PaperDetailResponse(BaseModel):
     questions: list[QuestionDetailResponse] = []
 
 
+class CreateBankQuestionRequest(BaseModel):
+    type: QuestionType
+    prompt: str
+    answer: str
+    standard_answer_image_url: str | None = None
+    reference_image_url: str | None = None
+    content_image_url: str | None = None
+    external_url: str | None = None
+    has_image: bool = False
+
+
 class UpdateBankQuestionRequest(BaseModel):
     prompt: str
     answer: str

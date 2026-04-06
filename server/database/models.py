@@ -127,7 +127,7 @@ class BankQuestion(BaseModel):
     standard_answer_image_url = TextField(null=True, default=None)
     reference_image_url = TextField(null=True, default=None)
     content_image_url = TextField(null=True, default=None)
-    external_url = TextField(null=True, default=None)
+    external_url = TextField(null=True, default=None, unique=True)
     has_image = BooleanField(default=False)
     is_published = BooleanField(default=False)
 
